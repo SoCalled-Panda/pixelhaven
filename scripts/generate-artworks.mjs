@@ -42,7 +42,7 @@ function generateHdArtwork(art) {
   if (usedColors < HD_MIN_COLORS || usedColors > HD_MAX_COLORS) {
     throw new Error(`[${art.id}] HD palette has ${usedColors} colors — must be ${HD_MIN_COLORS}..${HD_MAX_COLORS}`);
   }
-  const hexPalette = [art.paper, ...palette.map(P.rgbToHex)];
+  const hexPalette = ['#ffffff', ...palette.map(P.rgbToHex)];
   const rle = P.rleEncodeRows(grid, HD_SIZE, HD_SIZE);
   const manifest = {
     id: art.id,
@@ -51,12 +51,12 @@ function generateHdArtwork(art) {
     contentVersion: HD_CONTENT_VERSION,
     width: HD_SIZE,
     height: HD_SIZE,
-    paperColor: art.paper,
+    paperColor: '#ffffff',
     outlineColor: '#2b2620',
     palette: hexPalette,
     rle,
   };
-  const preview = P.renderHdPreviewSvg(grid, hexPalette, HD_SIZE, HD_SIZE, art.paper, 3);
+  const preview = P.renderHdPreviewSvg(grid, hexPalette, HD_SIZE, HD_SIZE, '#ffffff', 3);
   return { manifest, preview, usedColors };
 }
 
