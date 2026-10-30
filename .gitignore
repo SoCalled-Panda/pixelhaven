@@ -22,3 +22,6 @@ dev.log
 # Audio source recordings (licensed, too heavy for git — see docs/assets-licenses.md)
 scripts/audio-src
 *.pid
+
+# Vite cache
+.vite
