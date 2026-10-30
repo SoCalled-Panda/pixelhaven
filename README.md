@@ -1,3 +1,4 @@
+
 # PixelHaven
 
 A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-art scenes with a studio-grade toolset — zoom, pan, flood fill, undo/redo, and a 100+ color palette. Built with React, TypeScript, and Vite.
@@ -15,7 +16,8 @@ A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-a
 | Home Gallery | Coloring Studio |
 |:---:|:---:|
 | _screenshot placeholder_ | _screenshot placeholder_ |
-
+<img width="1079" height="984" alt="2026-10-30 20_33_26-Settings" src="https://github.com/user-attachments/assets/8ab8cf5f-9afb-4249-8bf2-371f8e0b9ffd" />
+<img width="1110" height="659" alt="2026-10-30 20_22_53-pixelhaven - File Explorer" src="https://github.com/user-attachments/assets/ec28ae6e-614d-4468-bf11-f3b0dedefabb" />
 ---
 
 ## Features
