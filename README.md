@@ -103,8 +103,9 @@ public/
 
 ## License
 
+This project is licensed under the [MIT License](./LICENSE).
 
-This project is open source. Music tracks are by their respective artists under CC BY-SA 3.0 / free-use licenses (see `public/audio/tracks.json` for attribution).
+Music tracks are by their respective artists under CC BY-SA 3.0 / free-use licenses (see public/audio/tracks.json for attribution).
 
 ---
 
