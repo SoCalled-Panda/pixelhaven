@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "defaultTrackId": "chill-fm",
+  "defaultVolume": 0.6,
+  "attribution": "Cozy lofi tracks for a relaxing coloring experience.",
+  "attributionShort": "Cozy Lofi · Relaxing",
+  "tracks": [
+    {
+      "id": "chill-fm",
+      "title": "Chill FM",
+      "file": "audio/chill-fm.mp3",
+      "description": "Chill lofi beats for a relaxing coloring session — mellow vibes, soft rhythms.",
+      "license": "Music: \"Chill FM\" by Dope Cat — free for personal use."
+    },
+    {
+      "id": "horizon",
+      "title": "Horizon",
+      "file": "audio/horizon.mp3",
+      "description": "Warm ambient lofi — gentle melodies floating over a soft beat.",
+      "license": "Music: \"Horizon\" by Christopher Galovan — free for personal use."
+    },
+    {
+      "id": "where-the-light-returns",
+      "title": "Where the Light Returns",
+      "file": "audio/where-the-light-returns.mp3",
+      "description": "Uplifting lofi — bright chords and a cozy groove to color by.",
+      "license": "Music: \"Where the Light Returns\" by Daniel Robinson — free for personal use."
+    },
+    {
+      "id": "cozy-coffee-1",
+      "title": "Cozy Coffee",
+      "file": "audio/cozy-coffee-1.mp3",
+      "description": "Cozy coffee shop lofi — warm acoustic guitar and gentle piano.",
+      "license": "Music: \"Cozy Coffee\" by Andrii H — free for personal use."
+    },
+    {
+      "id": "cozy-coffee-2",
+      "title": "Cozy Coffee 2",
+      "file": "audio/cozy-coffee-2.mp3",
+      "description": "Another cozy coffee lofi — relaxing beats for a calm coloring session.",
+      "license": "Music: \"Cozy Coffee\" by Andrii H — free for personal use."
+    },
+    {
+      "id": "cozy-mountain",
+      "title": "Cozy Mountain",
+      "file": "audio/cozy-mountain.mp3",
+      "description": "Mountain-inspired lofi — peaceful and warm, perfect for coloring.",
+      "license": "Music: \"Cozy\" by The Mountain — free for personal use."
+    }
+  ]
+}

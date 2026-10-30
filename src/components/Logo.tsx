@@ -1,0 +1,122 @@
+/**
+ * PixelHaven brand mark: an original pixel-art donut with pink frosting and
+ * sprinkles (also the favicon), drawn as crisp rects so it scales cleanly
+ * at any size.
+ */
+export function PixelDonut({ size = 40 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="16" height="16" rx="3" fill="#fffbf2" />
+      {/* outline */}
+      <g fill="#43364a">
+        <rect x="5" y="1" width="6" height="1" />
+        <rect x="3" y="2" width="2" height="1" />
+        <rect x="11" y="2" width="2" height="1" />
+        <rect x="2" y="3" width="1" height="2" />
+        <rect x="13" y="3" width="1" height="2" />
+        <rect x="1" y="5" width="1" height="6" />
+        <rect x="14" y="5" width="1" height="6" />
+        <rect x="2" y="11" width="1" height="2" />
+        <rect x="13" y="11" width="1" height="2" />
+        <rect x="3" y="13" width="3" height="1" />
+        <rect x="10" y="13" width="3" height="1" />
+        <rect x="6" y="14" width="4" height="1" />
+      </g>
+      {/* dough */}
+      <g fill="#eda65f">
+        <rect x="4" y="9" width="1" height="1" />
+        <rect x="11" y="9" width="1" height="1" />
+        <rect x="6" y="10" width="3" height="1" />
+        <rect x="10" y="10" width="2" height="1" />
+        <rect x="5" y="11" width="8" height="1" />
+        <rect x="3" y="12" width="6" height="1" />
+        <rect x="6" y="13" width="3" height="1" />
+      </g>
+      {/* dough highlight */}
+      <g fill="#f7c983">
+        <rect x="2" y="10" width="3" height="1" />
+        <rect x="3" y="11" width="2" height="1" />
+      </g>
+      {/* dough shade + hole rim */}
+      <g fill="#c9853f">
+        <rect x="5" y="8" width="1" height="2" />
+        <rect x="10" y="8" width="1" height="2" />
+        <rect x="9" y="12" width="4" height="1" />
+        <rect x="9" y="13" width="1" height="1" />
+      </g>
+      {/* frosting */}
+      <g fill="#ee6fa4">
+        <rect x="7" y="2" width="4" height="1" />
+        <rect x="3" y="3" width="6" height="1" />
+        <rect x="10" y="3" width="3" height="1" />
+        <rect x="4" y="4" width="7" height="1" />
+        <rect x="12" y="4" width="1" height="1" />
+        <rect x="2" y="5" width="12" height="1" />
+        <rect x="3" y="6" width="2" height="1" />
+        <rect x="11" y="6" width="3" height="1" />
+        <rect x="2" y="7" width="3" height="1" />
+        <rect x="11" y="7" width="1" height="1" />
+        <rect x="13" y="7" width="1" height="1" />
+        <rect x="3" y="8" width="2" height="1" />
+        <rect x="11" y="8" width="2" height="1" />
+        <rect x="2" y="9" width="1" height="1" />
+        <rect x="13" y="9" width="1" height="1" />
+        <rect x="5" y="10" width="1" height="1" />
+        <rect x="9" y="10" width="1" height="1" />
+        <rect x="12" y="10" width="2" height="1" />
+      </g>
+      {/* frosting drips */}
+      <g fill="#d95f92">
+        <rect x="5" y="6" width="1" height="2" />
+        <rect x="10" y="6" width="1" height="2" />
+        <rect x="6" y="6" width="1" height="1" />
+        <rect x="9" y="6" width="1" height="1" />
+      </g>
+      {/* rounded hole corners */}
+      <g fill="#c9853f">
+        <rect x="6" y="9" width="1" height="1" />
+        <rect x="9" y="9" width="1" height="1" />
+      </g>
+      {/* frosting shine */}
+      <rect x="5" y="2" width="1" height="1" fill="#ff9fc0" />
+      {/* sprinkles */}
+      <g fill="#f6c945">
+        <rect x="3" y="4" width="1" height="1" />
+        <rect x="2" y="6" width="1" height="1" />
+        <rect x="13" y="8" width="1" height="1" />
+      </g>
+      <g fill="#fffbf2">
+        <rect x="6" y="2" width="1" height="1" />
+        <rect x="12" y="7" width="1" height="1" />
+        <rect x="3" y="9" width="1" height="1" />
+      </g>
+      <g fill="#59c3b8">
+        <rect x="9" y="3" width="1" height="1" />
+        <rect x="2" y="8" width="1" height="1" />
+      </g>
+      <g fill="#6fa8dc">
+        <rect x="11" y="4" width="1" height="1" />
+        <rect x="12" y="9" width="1" height="1" />
+      </g>
+    </svg>
+  );
+}
+
+export function Logo({ size = 40 }: { size?: number }) {
+  return (
+    <span className="logo">
+      <PixelDonut size={size} />
+      <span className="logo__word">
+        <span className="logo__name pixel-label">pixelhaven</span>
+        <span className="logo__tagline">a cozy coloring nook</span>
+      </span>
+    </span>
+  );
+}

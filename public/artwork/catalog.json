@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "artworks": [
+    {
+      "id": "floating-tree",
+      "title": "Floating Tree",
+      "tier": "hd",
+      "manifest": "artwork/floating-tree/manifest.json",
+      "preview": "artwork/floating-tree/preview.svg"
+    },
+    {
+      "id": "turquoise-cove",
+      "title": "Turquoise Cove",
+      "tier": "hd",
+      "manifest": "artwork/turquoise-cove/manifest.json",
+      "preview": "artwork/turquoise-cove/preview.svg"
+    },
+    {
+      "id": "sakura-temple",
+      "title": "Sakura Temple",
+      "tier": "hd",
+      "manifest": "artwork/sakura-temple/manifest.json",
+      "preview": "artwork/sakura-temple/preview.svg"
+    },
+    {
+      "id": "aurora-fjord",
+      "title": "Aurora Fjord",
+      "tier": "hd",
+      "manifest": "artwork/aurora-fjord/manifest.json",
+      "preview": "artwork/aurora-fjord/preview.svg"
+    },
+    {
+      "id": "hd-sunset-sail",
+      "title": "Sunset Sail",
+      "tier": "hd",
+      "manifest": "artwork/hd-sunset-sail/manifest.json",
+      "preview": "artwork/hd-sunset-sail/preview.svg"
+    },
+    {
+      "id": "hd-mountain-dawn",
+      "title": "Mountain Dawn",
+      "tier": "hd",
+      "manifest": "artwork/hd-mountain-dawn/manifest.json",
+      "preview": "artwork/hd-mountain-dawn/preview.svg"
+    },
+    {
+      "id": "hd-aurora-night",
+      "title": "Aurora Night",
+      "tier": "hd",
+      "manifest": "artwork/hd-aurora-night/manifest.json",
+      "preview": "artwork/hd-aurora-night/preview.svg"
+    },
+    {
+      "id": "hd-rose-glow",
+      "title": "Rose Glow",
+      "tier": "hd",
+      "manifest": "artwork/hd-rose-glow/manifest.json",
+      "preview": "artwork/hd-rose-glow/preview.svg"
+    },
+    {
+      "id": "hd-city-night",
+      "title": "City Lights",
+      "tier": "hd",
+      "manifest": "artwork/hd-city-night/manifest.json",
+      "preview": "artwork/hd-city-night/preview.svg"
+    },
+    {
+      "id": "hd-forest-light",
+      "title": "Forest Light",
+      "tier": "hd",
+      "manifest": "artwork/hd-forest-light/manifest.json",
+      "preview": "artwork/hd-forest-light/preview.svg"
+    },
+    {
+      "id": "hd-desert-dusk",
+      "title": "Desert Dusk",
+      "tier": "hd",
+      "manifest": "artwork/hd-desert-dusk/manifest.json",
+      "preview": "artwork/hd-desert-dusk/preview.svg"
+    },
+    {
+      "id": "hd-lily-pond",
+      "title": "Lily Pond",
+      "tier": "hd",
+      "manifest": "artwork/hd-lily-pond/manifest.json",
+      "preview": "artwork/hd-lily-pond/preview.svg"
+    }
+  ]
+}

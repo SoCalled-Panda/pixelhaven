@@ -1,0 +1,74 @@
+/*
+ * PixelHaven design tokens — the single source of truth for the visual language.
+ * Warm paper, plum ink, terracotta accents: calm, cozy, high contrast.
+ *
+ * Breakpoints (media queries can't use vars — documented here):
+ *   --bp-xs: ≤ 480px   (phones, incl. 320px target)
+ *   --bp-sm: 481–768px (tablets / narrow desktop)
+ *   --bp-md: 769–1024px
+ *   --bp-lg: > 1024px
+ */
+
+:root {
+  /* Color */
+  --color-bg: #f8f1e5;
+  --color-bg-deep: #f0e4cf;
+  --color-surface: #fffbf2;
+  --color-surface-raised: #ffffff;
+  --color-ink: #43364a;
+  --color-ink-muted: #77667f;
+  --color-ink-faint: #a99ab0;
+  --color-primary: #e8875f;
+  --color-primary-strong: #b04f2c; /* AA: white text on this = 5.2:1 */
+  --color-primary-soft: #fbe3d6;
+  --color-accent: #7fb069;
+  --color-accent-deep: #3e6b34; /* AA on accent-soft = 5.3:1 */
+  --color-accent-soft: #e2efdb;
+  --color-danger: #c8503e;
+  --color-danger-strong: #a53a2a;
+  --color-danger-soft: #f6ddd8;
+  --color-gold: #f6c945;
+  --color-border: #e5d8c3;
+  --color-border-strong: #cdbb9f;
+  --color-focus: #b04f2c;
+  --color-canvas-paper: #f8f1e5;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadows (plum-tinted, soft) */
+  --shadow-sm: 0 1px 2px rgb(67 54 74 / 0.08);
+  --shadow-md: 0 4px 14px rgb(67 54 74 / 0.12);
+  --shadow-lg: 0 14px 34px rgb(67 54 74 / 0.18);
+
+  /* Typography
+     Body: system stack — offline-clean, no webfont downloads.
+     Pixel: accent-only (logo chip, tiny flourishes); graceful fallback stack. */
+  --font-body:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-pixel: 'Press Start 2P', 'VT323', 'Courier New', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* Layout */
+  --container-max: 1060px;
+  --canvas-max: 560px;
+  --dock-min-height: 64px;
+}

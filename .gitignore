@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Test / coverage
+coverage
+
+# Local env & logs
+*.local
+dev.log
+*.log
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Audio source recordings (licensed, too heavy for git — see docs/assets-licenses.md)
+scripts/audio-src
+*.pid
