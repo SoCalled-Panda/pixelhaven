@@ -349,7 +349,7 @@ export function rleEncodeRows(grid: Int32Array, w: number, h: number): string[] 
 /** Settings shared by the DOM wrapper and the pure pipeline. */
 export const PHOTO_BOARD_SIZE = 256;
 export const PHOTO_SUPERSAMPLE = 2;
-export const PHOTO_PAPER = '#f8f1e5'; // --color-canvas-paper (fallback only)
+export const PHOTO_PAPER = '#ffffff'; // white paper for uncolored cells
 export const PHOTO_OUTLINE = '#2b2620';
 
 /**
@@ -404,7 +404,7 @@ export function buildPhotoGrid(cv: FloatCanvas, seed: number): PhotoPipelineResu
     minColors: 60,
     maxColors: 200,
   });
-  const hexPalette = [derivePaper(palette), ...palette.map(rgbToHex)];
+  const hexPalette = ['#ffffff', ...palette.map(rgbToHex)];
   return {
     grid,
     hexPalette,
@@ -556,7 +556,7 @@ export async function convertPhotoToArtwork(source: CanvasImageSource, options: 
     contentVersion: 1,
     width: result.size,
     height: result.size,
-    paperColor: result.hexPalette[0],
+    paperColor: '#ffffff',
     outlineColor: PHOTO_OUTLINE,
     palette: result.hexPalette,
     rle: rleEncodeRows(result.grid, result.size, result.size),
