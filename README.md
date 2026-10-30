@@ -1,90 +1,120 @@
-# PixelHaven · Cozy Coloring
+# PixelHaven
 
-A cozy, **local-first** pixel-art coloring web app. Pick a picture, select a color,
-tap the grid to fill it, listen to soft ambience, and come back later — your
-progress is saved right in your browser.
+A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-art scenes with a studio-grade toolset — zoom, pan, flood fill, undo/redo, and a 100+ color palette. Built with React, TypeScript, and Vite.
 
-Built as a calm alternative to noisy, ad-heavy coloring apps: no accounts, no
-tracking, no timers — just coloring.
+**[Live Demo](https://socalled-panda.github.io/pixelhaven/)**
+
+---
+
+## Screenshots
+
+<!-- Add your screenshots here -->
+<!-- ![Home Gallery](./screenshots/home.png) -->
+<!-- ![Coloring Studio](./screenshots/studio.png) -->
+
+| Home Gallery | Coloring Studio |
+|:---:|:---:|
+| _screenshot placeholder_ | _screenshot placeholder_ |
+
+---
 
 ## Features
 
-- 🎨 **Coloring Studio** — paint by numbers with two mechanics: the classic
-  drag-to-paint brush **and a flood-fill bucket** that colors a whole
-  contiguous area in one tap (with a live region preview while you hover).
-  Pinch/wheel zoom, move tool, right-drag pan, paint-by-numbers digits,
-  undo/redo, eraser, reset-with-confirmation
-- 📸 **Turn your photo into a coloring page** — pick any picture and the app
-  converts it in the browser with the same HD pipeline used for the built-in
-  set (256×256, up to 200 colors, painterly region borders), shows a
-  side-by-side preview before saving, and drops it straight into your gallery
-  (YOURS badge, deletable). Nothing is uploaded — everything stays on-device
-- 🖼️ **Curated gallery — all HD** — **12 scenes at 256×256 with 100-200
-  colors each** (127-168 in practice): the floating tree hero, turquoise
-  cove, sakura temple and aurora fjord joined the round-6 high-fidelity set
-  (sunset sail, mountain dawn, aurora night, rose glow, city lights, forest
-  light, desert dusk, lily pond). Every board is procedurally generated with
-  painterly gradients and noise-textured regions; per-artwork progress
-- 🔢 **Reference-aware coloring** — a floating finished-picture card over the
-  canvas, paint-by-numbers digits on every cell, and live per-color percentage
-  captions under each palette swatch (compact scrollable grid for the
-  200-color HD sets)
-- 💾 **Local-first persistence** — sessions autosave to IndexedDB with
-  revision-based stale-write protection; export/import save files
-- 🎧 **Lofi ambience player** — six real lofi/chill tracks by Alex Morgan
-  (Free Music Archive, CC BY 4.0) as seamless loops; playback survives route
-  changes; starts only after you click play; attribution shown in the dock
-- ⌨️ **Accessible** — keyboard canvas navigation (arrows/Enter/Backspace/±/0),
-  visible focus, reduced-motion support
-- 📴 **Works offline** after first load (static assets, no backend required)
+- **Paint-by-numbers engine** — click or drag to color cells, with per-cell progress tracking and completion detection
+- **Flood fill tool** — fill entire connected regions of the same color in one tap
+- **Eraser** — return any cell to its uncolored state
+- **Zoom & pan** — scroll/pinch to zoom, drag to pan, fit-to-view button
+- **Undo / redo** — full history with keyboard shortcuts
+- **100–200 color palettes** — high-fidelity HD artworks with median-cut quantization
+- **Reference preview** — floating thumbnail of the finished artwork for guidance
+- **Progress tracking** — per-color completion percentages and overall progress bar
+- **Save / load** — export and import coloring progress as JSON
+- **Auto-playing lofi soundtrack** — 6 cozy tracks that auto-advance and start on first interaction
+- **Dark & light themes** — warm, cozy palette designed for long coloring sessions
+- **Responsive** — works on desktop and tablet
 
-## Tech stack
+## Tech Stack
 
-React 18 + TypeScript (strict) + Vite. Canvas 2D rendering via a
-framework-independent coloring engine. IndexedDB for sessions, localStorage for
-small preferences. No backend — see [docs/architecture.md](docs/architecture.md).
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build | Vite 5 |
+| Styling | CSS custom properties (design tokens) |
+| State | React hooks + localStorage persistence |
+| Audio | HTML5 Audio (singleton service, auto-advance playlist) |
+| Testing | Vitest + Testing Library |
+| Deployment | GitHub Pages (GitHub Actions CI/CD) |
 
-## Getting started
+## Getting Started
 
+### Prerequisites
+- Node.js 18+
+- npm 9+
+
+### Install & run
 ```bash
+git clone https://github.com/SoCalled-Panda/pixelhaven.git
+cd pixelhaven
 npm install
-npm run dev          # start dev server
+npm run dev
 ```
 
-### Scripts
+Open http://localhost:5173 in your browser.
 
-| Command                  | Purpose                                    |
-| ------------------------ | ------------------------------------------ |
-| `npm run dev`            | Dev server with hot reload                 |
-| `npm run build`          | Type-check + production build (`dist/`)    |
-| `npm run preview`        | Serve the production build locally         |
-| `npm test`               | Run the Vitest unit/integration suite      |
-| `npm run test:watch`     | Watch mode                                 |
-| `npm run lint`           | ESLint                                     |
-| `npm run format`         | Prettier                                   |
-| `npm run typecheck`      | `tsc --noEmit`                             |
-| `npm run validate:assets`| Validate catalog/manifests/preview assets  |
-| `npm run generate:artworks` | Regenerate artwork manifests + previews |
-| `npm run prepare:audio`  | Process lofi tracks from `scripts/audio-src/` into looped OGGs (ffmpeg) |
+### Build for production
+```bash
+npm run build
+```
+Output goes to `dist/`.
 
-## Documentation
+### Run tests
+```bash
+npm test
+```
 
-All product and engineering docs live in [`docs/`](docs/):
+### Validate assets
+```bash
+npm run validate:assets
+```
 
-- [PRD](docs/prd.md) — product requirements, MVP scope, acceptance criteria
-- [Architecture](docs/architecture.md) — boundaries, data flow, state ownership
-- [Full detail checklist](docs/checklist.md) — the working delivery checklist
-- [Artwork pipeline](docs/artwork-pipeline.md) — grid/mask/palette conventions, manifest schema
-- [Testing guide](docs/testing-guide.md) — automated tests + manual QA checklist
-- [Assets & licenses](docs/assets-licenses.md) — provenance of every art/audio asset
+## Project Structure
 
-## Deployment
+```
+src/
+├── components/       # UI components (PalettePicker, ReferencePreview, icons, etc.)
+├── data/             # Manifest validation, catalog loading, custom artworks
+├── engine/           # Coloring engine, renderer, view transform, types
+├── hooks/            # useColoringSession, usePersistentPreference
+├── lib/              # Photo → paint-by-number pipeline
+├── pages/            # HomePage, ColoringPage, NotFoundPage
+└── styles/           # Global CSS, design tokens
+scripts/
+├── generate-artworks.mjs   # Classic artwork generator (256×256)
+├── hifi-scenes.mjs         # HD scene definitions (256×256, 100-200 colors)
+├── pbn-lib.mjs             # Photo → PBN rasterization library
+├── validate-assets.mjs     # Asset validation (release gate)
+└── art-lib.mjs             # Raster DSL for classic scenes
+public/
+├── artwork/          # Generated artwork manifests + preview SVGs
+└── audio/            # Lofi music tracks
+```
 
-Static hosting only. A GitHub Pages workflow is included
-(`.github/workflows/deploy.yml`); enable Pages → "GitHub Actions" source and push
-to `main`. Any HTTPS static host works (Netlify, Cloudflare Pages, nginx).
+## Keyboard Shortcuts
+
+| Key | Action |
+|---|---|
+| `1`–`9` | Select color by number |
+| `0` | Eraser |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Y` / `Ctrl+Shift+Z` | Redo |
+| `+` / `-` | Zoom in / out |
+| `0` | Fit to view |
+| `Space` (hold) | Pan mode |
 
 ## License
 
-Code and original assets: MIT — see [LICENSE](LICENSE) and
-[docs/assets-licenses.md](docs/assets-licenses.md).
+This project is open source. Music tracks are by their respective artists under CC BY-SA 3.0 / free-use licenses (see `public/audio/tracks.json` for attribution).
+
+---
+
+Built with care. Happy coloring! 🎨
