@@ -1,6 +1,6 @@
-# PixelHaven
+﻿# PixelHaven
 
-A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-art scenes with a studio-grade toolset — zoom, pan, flood fill, undo/redo, and a 100+ color palette. Built with React, TypeScript, and Vite.
+A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-art scenes with a studio-grade toolset â€” zoom, pan, flood fill, undo/redo, and a 100+ color palette. Built with React, TypeScript, and Vite.
 
 **[Live Demo](https://socalled-panda.github.io/pixelhaven/)**
 
@@ -8,30 +8,27 @@ A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-a
 
 ## Screenshots
 
-<!-- Add your screenshots here -->
-<!-- ![Home Gallery](./screenshots/home.png) -->
-<!-- ![Coloring Studio](./screenshots/studio.png) -->
-
-| Home Gallery | Coloring Studio |
-|:---:|:---:|
-| _screenshot placeholder_ | _screenshot placeholder_ |
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8ab8cf5f-9afb-4249-8bf2-371f8e0b9ffd" alt="PixelHaven Settings" width="48%" />
+  <img src="https://github.com/user-attachments/assets/ec28ae6e-614d-4468-bf11-f3b0dedefabb" alt="PixelHaven File Explorer" width="48%" />
+</p>
 
 ---
 
 ## Features
 
-- **Paint-by-numbers engine** — click or drag to color cells, with per-cell progress tracking and completion detection
-- **Flood fill tool** — fill entire connected regions of the same color in one tap
-- **Eraser** — return any cell to its uncolored state
-- **Zoom & pan** — scroll/pinch to zoom, drag to pan, fit-to-view button
-- **Undo / redo** — full history with keyboard shortcuts
-- **100–200 color palettes** — high-fidelity HD artworks with median-cut quantization
-- **Reference preview** — floating thumbnail of the finished artwork for guidance
-- **Progress tracking** — per-color completion percentages and overall progress bar
-- **Save / load** — export and import coloring progress as JSON
-- **Auto-playing lofi soundtrack** — 6 cozy tracks that auto-advance and start on first interaction
-- **Dark & light themes** — warm, cozy palette designed for long coloring sessions
-- **Responsive** — works on desktop and tablet
+- **Paint-by-numbers engine** â€” click or drag to color cells, with per-cell progress tracking and completion detection
+- **Flood fill tool** â€” fill entire connected regions of the same color in one tap
+- **Eraser** â€” return any cell to its uncolored state
+- **Zoom & pan** â€” scroll/pinch to zoom, drag to pan, fit-to-view button
+- **Undo / redo** â€” full history with keyboard shortcuts
+- **100â€“200 color palettes** â€” high-fidelity HD artworks with median-cut quantization
+- **Reference preview** â€” floating thumbnail of the finished artwork for guidance
+- **Progress tracking** â€” per-color completion percentages and overall progress bar
+- **Save / load** â€” export and import coloring progress as JSON
+- **Auto-playing lofi soundtrack** â€” 6 cozy tracks that auto-advance and start on first interaction
+- **Dark & light themes** â€” warm, cozy palette designed for long coloring sessions
+- **Responsive** â€” works on desktop and tablet
 
 ## Tech Stack
 
@@ -81,29 +78,29 @@ npm run validate:assets
 
 ```
 src/
-├── components/       # UI components (PalettePicker, ReferencePreview, icons, etc.)
-├── data/             # Manifest validation, catalog loading, custom artworks
-├── engine/           # Coloring engine, renderer, view transform, types
-├── hooks/            # useColoringSession, usePersistentPreference
-├── lib/              # Photo → paint-by-number pipeline
-├── pages/            # HomePage, ColoringPage, NotFoundPage
-└── styles/           # Global CSS, design tokens
+â”œâ”€â”€ components/       # UI components (PalettePicker, ReferencePreview, icons, etc.)
+â”œâ”€â”€ data/             # Manifest validation, catalog loading, custom artworks
+â”œâ”€â”€ engine/           # Coloring engine, renderer, view transform, types
+â”œâ”€â”€ hooks/            # useColoringSession, usePersistentPreference
+â”œâ”€â”€ lib/              # Photo â†’ paint-by-number pipeline
+â”œâ”€â”€ pages/            # HomePage, ColoringPage, NotFoundPage
+â””â”€â”€ styles/           # Global CSS, design tokens
 scripts/
-├── generate-artworks.mjs   # Classic artwork generator (256×256)
-├── hifi-scenes.mjs         # HD scene definitions (256×256, 100-200 colors)
-├── pbn-lib.mjs             # Photo → PBN rasterization library
-├── validate-assets.mjs     # Asset validation (release gate)
-└── art-lib.mjs             # Raster DSL for classic scenes
+â”œâ”€â”€ generate-artworks.mjs   # Classic artwork generator (256Ã—256)
+â”œâ”€â”€ hifi-scenes.mjs         # HD scene definitions (256Ã—256, 100-200 colors)
+â”œâ”€â”€ pbn-lib.mjs             # Photo â†’ PBN rasterization library
+â”œâ”€â”€ validate-assets.mjs     # Asset validation (release gate)
+â””â”€â”€ art-lib.mjs             # Raster DSL for classic scenes
 public/
-├── artwork/          # Generated artwork manifests + preview SVGs
-└── audio/            # Lofi music tracks
+â”œâ”€â”€ artwork/          # Generated artwork manifests + preview SVGs
+â””â”€â”€ audio/            # Lofi music tracks
 ```
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |---|---|
-| `1`–`9` | Select color by number |
+| `1`â€“`9` | Select color by number |
 | `0` | Eraser |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` / `Ctrl+Shift+Z` | Redo |
@@ -117,4 +114,4 @@ This project is open source. Music tracks are by their respective artists under 
 
 ---
 
-Built with care. Happy coloring! 🎨
+Built with care. Happy coloring! ðŸŽ¨
