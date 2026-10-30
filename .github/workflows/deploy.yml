@@ -1,4 +1,4 @@
-name: CI & Deploy
+﻿name: CI & Deploy
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck · Lint · Test · Build
+    name: Typecheck Â· Lint Â· Test Â· Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,4 +68,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-"
