@@ -100,20 +100,6 @@ public/
 └── audio/            # Lofi music tracks
 ```
 
-## Keyboard Shortcuts
-
-| Key | Action |
-|---|---|
-| Arrow keys | Move cursor |
-| Enter / Space | Paint selected cell |
-| Backspace / Delete | Erase selected cell |
-| + / = | Zoom in |
-| - / _ | Zoom out |
-| 0 | Fit whole picture |
-| M | Toggle pan (move) mode |
-| F | Toggle fill tool |
-| B | Brush tool |
-| E | Eraser tool |
 
 ## License
 
