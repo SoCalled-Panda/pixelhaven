@@ -25,7 +25,7 @@ A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-a
 - **Flood fill tool** — fill entire connected regions of the same color in one tap
 - **Eraser** — return any cell to its uncolored state
 - **Zoom & pan** — scroll/pinch to zoom, drag to pan, fit-to-view button
-- **Undo / redo** — full history with keyboard shortcuts
+- **Undo / redo** — full history via toolbar buttons
 - **100-200 color palettes** — high-fidelity HD artworks with median-cut quantization
 - **Reference preview** — floating thumbnail of the finished artwork for guidance
 - **Progress tracking** — per-color completion percentages and overall progress bar
@@ -104,15 +104,19 @@ public/
 
 | Key | Action |
 |---|---|
-| `1`-`9` | Select color by number |
-| `0` | Eraser |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` / `Ctrl+Shift+Z` | Redo |
-| `+` / `-` | Zoom in / out |
-| `0` | Fit to view |
-| `Space` (hold) | Pan mode |
+| Arrow keys | Move cursor |
+| Enter / Space | Paint selected cell |
+| Backspace / Delete | Erase selected cell |
+| + / = | Zoom in |
+| - / _ | Zoom out |
+| 0 | Fit whole picture |
+| M | Toggle pan (move) mode |
+| F | Toggle fill tool |
+| B | Brush tool |
+| E | Eraser tool |
 
 ## License
+
 
 This project is open source. Music tracks are by their respective artists under CC BY-SA 3.0 / free-use licenses (see `public/audio/tracks.json` for attribution).
 
