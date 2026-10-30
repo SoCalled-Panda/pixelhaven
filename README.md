@@ -9,12 +9,13 @@ A cozy, high-fidelity paint-by-numbers coloring web app. Color intricate pixel-a
 ## Screenshots
 
 <p align="center">
+  <img src="https://github.com/user-attachments/assets/ec28ae6e-614d-4468-bf11-f3b0dedefabb" alt="PixelHaven File Explorer" width="60%" />
+</p>
+<p align="center">
   <img src="https://github.com/user-attachments/assets/8ab8cf5f-9afb-4249-8bf2-371f8e0b9ffd" alt="PixelHaven Settings" width="60%" />
 </p>
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/ec28ae6e-614d-4468-bf11-f3b0dedefabb" alt="PixelHaven File Explorer" width="60%" />
-</p>
+
 
 ## Features
 
