@@ -198,7 +198,7 @@ function Studio({
       rendererRef.current?.zoomAtPoint(
         event.clientX,
         event.clientY,
-        event.deltaY < 0 ? 1.15 : 1 / 1.15,
+        event.deltaY < 0 ? 1.03 : 1 / 1.03,
       );
     };
     const onGesture = (event: Event) => event.preventDefault();
@@ -573,12 +573,35 @@ function Studio({
               pressed={panMode}
               onClick={() => setPanMode((value) => !value)}
             />
-            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(1.3)} />
-            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / 1.3)} />
+            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(1.08)} />
+            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / 1.08)} />
             <IconButton
               icon={<IconFit />}
               label="Fit whole picture"
               onClick={() => rendererRef.current?.fit()}
+            />
+            <IconButton
+              icon={<IconFill />}
+              label="Fill a whole area"
+              active={session.tool === 'fill'}
+              pressed={session.tool === 'fill'}
+              onClick={() => session.selectTool(session.tool === 'fill' ? 'brush' : 'fill')}
+            />
+            <IconButton
+              icon={<IconEraser />}
+              label="Eraser"
+              active={session.tool === 'eraser'}
+              pressed={session.tool === 'eraser'}
+              onClick={() => session.selectTool(session.tool === 'eraser' ? 'brush' : 'eraser')}
+            />
+            <IconButton icon={<IconUndo />} label="Undo" onClick={session.undo} disabled={!session.canUndo} />
+            <IconButton icon={<IconRedo />} label="Redo" onClick={session.redo} disabled={!session.canRedo} />
+            <IconButton icon={<IconTrash />} label="Reset picture…" onClick={() => setResetOpen(true)} />
+            <IconButton icon={<IconDownload />} label="Export save file" onClick={handleExport} />
+            <IconButton
+              icon={<IconUpload />}
+              label="Import save file"
+              onClick={() => fileInputRef.current?.click()}
             />
           </div>
         </div>
@@ -598,46 +621,19 @@ function Studio({
           onSelect={session.selectColor}
           perColor={progress.perColor}
         />
-        <div className="studio__tools" role="group" aria-label="Tools">
-          <IconButton
-            icon={<IconFill />}
-            label="Fill a whole area"
-            active={session.tool === 'fill'}
-            pressed={session.tool === 'fill'}
-            onClick={() => session.selectTool(session.tool === 'fill' ? 'brush' : 'fill')}
-          />
-          <IconButton
-            icon={<IconEraser />}
-            label="Eraser"
-            active={session.tool === 'eraser'}
-            pressed={session.tool === 'eraser'}
-            onClick={() => session.selectTool(session.tool === 'eraser' ? 'brush' : 'eraser')}
-          />
-          <IconButton icon={<IconUndo />} label="Undo" onClick={session.undo} disabled={!session.canUndo} />
-          <IconButton icon={<IconRedo />} label="Redo" onClick={session.redo} disabled={!session.canRedo} />
-          <IconButton icon={<IconTrash />} label="Reset picture…" onClick={() => setResetOpen(true)} />
-        </div>
-        <div className="studio__tools" role="group" aria-label="Save file actions">
-          <IconButton icon={<IconDownload />} label="Export save file" onClick={handleExport} />
-          <IconButton
-            icon={<IconUpload />}
-            label="Import save file"
-            onClick={() => fileInputRef.current?.click()}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="sr-only"
-            aria-hidden="true"
-            tabIndex={-1}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void handleImportFile(file);
-              event.target.value = ''; // allow re-selecting the same file
-            }}
-          />
-        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="sr-only"
+          aria-hidden="true"
+          tabIndex={-1}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleImportFile(file);
+            event.target.value = ''; // allow re-selecting the same file
+          }}
+        />
       </div>
 
       {/* Reset confirmation (PRD: reset requires confirmation) */}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Progress } from '../engine/types';
 
 export interface PalettePickerProps {
@@ -32,17 +33,41 @@ function swatchInkColor(hex: string): string {
  * Index 0 is the reserved "uncolored" appearance and is never offered.
  */
 export function PalettePicker({ palette, selected, onSelect, perColor }: PalettePickerProps) {
+  const [search, setSearch] = useState('');
   // High-fidelity sets ship 100+ colors — switch to a compact, scrollable
   // grid so the studio controls stay usable (round 6).
   const dense = palette.length > 40;
+
+  // Filter colors based on search query
+  const filteredIndices = palette
+    .map((_, index) => index)
+    .filter((index) => {
+      if (index === 0) return false;
+      if (!search.trim()) return true;
+      const q = search.trim();
+      return String(index).startsWith(q);
+    });
+
   return (
     <div
       className={dense ? 'palette palette--dense' : 'palette'}
       role="group"
       aria-label="Color palette"
     >
+      {dense && (
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="palette__search"
+          aria-label="Search colors by number"
+        />
+      )}
       {palette.map((color, index) => {
         if (index === 0) return null; // reserved uncolored index
+        if (!filteredIndices.includes(index)) return null;
         const isActive = selected === index;
         const pct = perColor?.[index] ?? null;
         const done = pct === 100;
