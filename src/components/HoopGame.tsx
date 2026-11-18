@@ -524,8 +524,6 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
       const canvas = canvasRef.current;
       if (!drag || !layout || !canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
       const ball = ballRef.current;
       if (ball.state !== 'drag') return;
       // drag.samples already ends with { x: drag.lastX, y: drag.lastY } from the

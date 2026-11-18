@@ -43,8 +43,6 @@ class AudioService {
   private volume = 0.6;
   private muted = false;
   private fadeTimer: number | null = null;
-  private autoStarted = false;
-  private userGesture = false;
 
   setTracks(tracks: TrackInfo[], defaultTrackId: string): void {
     this.tracks = tracks;
@@ -105,7 +103,11 @@ class AudioService {
     }
   }
 
-  /** Must be called from a user gesture (browser autoplay policy). */
+  /** Record a user gesture so the next interaction can unlock autoplay. */
+  markUserGesture(): void {
+    // Autoplay is triggered by first user interaction via document listener
+  }
+
   async play(): Promise<void> {
     if (!this.hasTracks()) {
       this.emit({ kind: 'error', message: 'No audio tracks are available right now.' });
@@ -134,12 +136,6 @@ class AudioService {
         message: 'Playback could not start. Press play again in a moment.',
       });
     }
-  }
-
-  /** Record a user gesture so the next interaction can unlock autoplay. */
-  markUserGesture(): void {
-    this.userGesture = true;
-    this.tryAutoStart();
   }
 
   pause(): void {
