@@ -1,11 +1,6 @@
 import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from 'react';
 
-/**
- * Toast types. Kept separate from toastContext.tsx so that toastContext.tsx
- * only exports the <audioContext> and <ToastProvider> components, as required
- * by React Fast Refresh.
- */
-export interface ToastInfo {
+export type ToastInfo = {
   id: number;
   message: string;
   tone?: 'info' | 'success' | 'warning' | 'error';
@@ -26,19 +21,13 @@ export interface ToastOptions {
   duration?: number;
 }
 
-// ToastContext is NOT exported - only ToastProvider exports it
-const ToastContext = createContext<ToastContextValue | null>(null);
+/**
+ * Toast context. Kept separate so ToastProvider can export only components.
+ */
+export const ToastContext = createContext<ToastContextValue | null>(null);
 
 export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
-}
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error('useToast must be used inside <ToastProvider>');
-  }
-  return ctx;
 }
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
