@@ -1,8 +1,3 @@
-/**
- * Ambience toast notifications — mounted once at app root.
- * Emits via a module-level singleton so any component can call useToast()
- * without prop-drilling.
- */
 import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from 'react';
 
 /**
@@ -37,10 +32,6 @@ export interface ToastContextValue {
 
 export const ToastContext = createContext<ToastContextValue | null>(null);
 
-/**
- * Export useToast as a standalone function so components can call it without
- * importing the ToastProvider component.
- */
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {
