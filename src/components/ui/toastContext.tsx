@@ -1,19 +1,20 @@
 import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from 'react';
 
-export type ToastInfo = {
+/**
+ * Toast types. Kept separate from toastContext.tsx so that toastContext.tsx
+ * only exports the <audioContext> and <ToastProvider> components, as required
+ * by React Fast Refresh.
+ */
+export interface ToastInfo {
   id: number;
   message: string;
   tone?: 'info' | 'success' | 'warning' | 'error';
   action?: { label: string; onClick: () => void };
   /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
-};
+}
 
 export type ToastItem = ToastInfo;
-
-export interface ToastContextValue {
-  showToast: (options: ToastOptions) => void;
-}
 
 export const MAX_VISIBLE = 3;
 
@@ -25,17 +26,13 @@ export interface ToastOptions {
   duration?: number;
 }
 
-export const ToastContext = createContext<ToastContextValue | null>(null);
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error('useToast must be used inside <ToastProvider>');
-  }
-  return ctx;
+interface ToastContextValue {
+  showToast: (options: ToastOptions) => void;
 }
 
-export const ToastProvider = ({ children }: { children: ReactNode }) => {
+export const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextIdRef = useRef(1);
   const timersRef = useRef(new Map<number, number>());
