@@ -29,7 +29,7 @@ export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
 }
 
-export const ToastContext = createContext<ToastContextValue | null>(null);
+const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
