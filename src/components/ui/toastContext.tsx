@@ -9,21 +9,20 @@ export type ToastInfo = {
   duration?: number;
 };
 
-interface ToastContextValue {
+export type ToastItem = ToastInfo;
+
+export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
 }
 
-interface ToastOptions {
+export const MAX_VISIBLE = 3;
+
+export interface ToastOptions {
   message: string;
   tone?: ToastInfo['tone'];
-  action?: ToastAction;
+  action?: { label: string; onClick: () => void };
   /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
-}
-
-interface ToastAction {
-  label: string;
-  onClick: () => void;
 }
 
 export const ToastContext = createContext<ToastContextValue | null>(null);

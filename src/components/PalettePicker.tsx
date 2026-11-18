@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Progress } from '../engine/types';
-import { colorName, swatchInkColor } from '../lib/colorUtils';
+import { colorMatches, swatchInkColor } from '../lib/colorUtils';
 import { IconClose, IconSearch } from './icons';
 
 export interface PalettePickerProps {

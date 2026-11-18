@@ -33,6 +33,14 @@ export function shade(hex: string, f: number): string {
 }
 
 /**
+ * Convert an [r, g, b] array to a hex color string (#RRGGBB).
+ */
+export function rgbToHex([r, g, b]: [number, number, number]): string {
+  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+
+/**
  * Rough color-name classifier so the palette search can understand words like
  * "red", "teal" or "brown" without shipping a full color dictionary. Returns
  * one of a small fixed vocabulary — good enough for filtering, not naming.
