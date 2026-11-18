@@ -528,14 +528,13 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
       const y = clientY - rect.top;
       const ball = ballRef.current;
       if (ball.state !== 'drag') return;
-      drag.samples.push({ t: timeStamp, x, y });
-
-      // Same estimator the dotted aim guide used while dragging — the release
-      // always produces the arc the player saw.
+      // drag.samples already ends with { x: drag.lastX, y: drag.lastY } from the
+      // last pointermove — use that as the end point so the aim guide and the
+      // actual launch always match exactly.
       const estimate = estimateLaunch(
         drag.samples,
         { x: drag.startX, y: drag.startY },
-        { x, y },
+        { x: drag.lastX, y: drag.lastY },
         timeStamp,
       );
       if (!estimate.launch) {

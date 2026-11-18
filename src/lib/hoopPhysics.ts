@@ -60,7 +60,7 @@ export function estimateLaunch(
   const dy = release.y - grab.y;
   const dist = Math.hypot(dx, dy);
   if (dist >= CARRY_MIN_DRAG) {
-    const power = Math.min(CARRY_POWER_MAX, Math.max(CARRY_POWER_MIN, dist * CARRY_POWER_SCALE));
+    const power = Math.min(CARRY_POWER_MAX, Math.max(CARRY_POWER_MIN, dist * CARRY_POWER_SCALE)) * 0.9;
     return { vx: (dx / dist) * power, vy: (dy / dist) * power, launch: true };
   }
   return { vx: 0, vy: 0, launch: false };

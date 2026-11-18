@@ -29,9 +29,10 @@ const FADE_STEP_MS = 50;
 
 /**
  * Owns the single <audio> element lifecycle (architecture §2): mounted above
- * the router, so route changes never restart playback. Playback starts only
- * from an explicit user gesture; autoplay rejection and load errors keep the
- * controls usable. Volume ramps in/out to avoid sudden changes (checklist §H).
+ * the router, so route changes never restart playback. Ambience starts
+ * automatically after the first user gesture; autoplay rejection and load
+ * errors keep the controls usable. Volume ramps in/out to avoid sudden
+ * changes (checklist §H).
  */
 class AudioService {
   private audio: HTMLAudioElement | null = null;
@@ -42,6 +43,8 @@ class AudioService {
   private volume = 0.6;
   private muted = false;
   private fadeTimer: number | null = null;
+  private autoStarted = false;
+  private userGesture = false;
 
   setTracks(tracks: TrackInfo[], defaultTrackId: string): void {
     this.tracks = tracks;
@@ -115,7 +118,7 @@ class AudioService {
     if (element.getAttribute('data-track') !== track.id) {
       element.src = assetUrl(track.file);
       element.setAttribute('data-track', track.id);
-      element.loop = true;
+      element.loop = false;
     }
 
     const target = this.muted ? 0 : this.volume;
@@ -131,6 +134,12 @@ class AudioService {
         message: 'Playback could not start. Press play again in a moment.',
       });
     }
+  }
+
+  /** Record a user gesture so the next interaction can unlock autoplay. */
+  markUserGesture(): void {
+    this.userGesture = true;
+    this.tryAutoStart();
   }
 
   pause(): void {
