@@ -1,51 +1,51 @@
 {
   "schemaVersion": 1,
-  "defaultTrackId": "green-tea",
+  "defaultTrackId": "chill-fm",
   "defaultVolume": 0.6,
-  "attribution": "All tracks by Purrple Cat (free-stock-music.com), licensed CC BY-SA 3.0.",
-  "attributionShort": "Purrple Cat · CC BY-SA 3.0",
+  "attribution": "Music for winding down",
+  "attributionShort": "Music for winding down",
   "tracks": [
     {
-      "id": "green-tea",
-      "title": "Green Tea",
-      "file": "audio/green-tea.ogg",
+      "id": "chill-fm",
+      "title": "Chill FM",
+      "file": "audio/chill-fm.mp3",
       "description": "Warm, steamy lofi for a slow afternoon — mellow keys, soft snare.",
-      "license": "Music: \"Green Tea\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "license": "Music: \"Chill FM\" for Pixelhaven"
     },
     {
-      "id": "birds-of-a-feather",
-      "title": "Birds of a Feather",
-      "file": "audio/birds-of-a-feather.ogg",
-      "description": "Featherlight morning lofi — gentle chords to ease you onto the page.",
-      "license": "Music: \"Birds of a Feather\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "id": "horizon",
+      "title": "Horizon",
+      "file": "audio/horizon.mp3",
+      "description": "Warm ambient lofi — gentle melodies floating over a soft beat.",
+      "license": "Music: \"Horizon\" — free for personal use."
     },
     {
-      "id": "shelter",
-      "title": "Shelter",
-      "file": "audio/shelter.ogg",
-      "description": "Cozy, hushed beats that wrap the room in a warm blanket of sound.",
-      "license": "Music: \"Shelter\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "id": "cozy-coffee-1",
+      "title": "Cozy Coffee 1",
+      "file": "audio/cozy-coffee-1.mp3",
+      "description": "Cozy coffee shop ambience with light jazz.",
+      "license": "Music: \"Cozy Coffee\" — free for personal use."
     },
     {
-      "id": "wild-strawberry",
-      "title": "Wild Strawberry",
-      "file": "audio/wild-strawberry.ogg",
-      "description": "Sweet, playful lofi with a sunny skip in its step.",
-      "license": "Music: \"Wild Strawberry\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "id": "cozy-coffee-2",
+      "title": "Cozy Coffee 2",
+      "file": "audio/cozy-coffee-2.mp3",
+      "description": "Late-night coffee shop ambience with soft piano.",
+      "license": "Music: \"Cozy Coffee\" — free for personal use."
     },
     {
-      "id": "field-of-fireflies",
-      "title": "Field of Fireflies",
-      "file": "audio/field-of-fireflies.ogg",
-      "description": "Dreamy dusk lofi — glowing pads drifting over a lazy groove.",
-      "license": "Music: \"Field of Fireflies\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "id": "cozy-mountain",
+      "title": "Cozy Mountain",
+      "file": "audio/cozy-mountain.mp3",
+      "description": "Mountain ambience with soft piano and nature sounds.",
+      "license": "Music: \"Cozy Mountain\" — free for personal use."
     },
     {
-      "id": "gentle-breeze",
-      "title": "Gentle Breeze",
-      "file": "audio/gentle-breeze.ogg",
-      "description": "Airy afternoon lofi that sways like curtains in an open window.",
-      "license": "Music: \"Gentle Breeze\" by Purrple Cat (free-stock-music.com) — CC BY-SA 3.0."
+      "id": "where-the-light-returns",
+      "title": "Where the Light Returns",
+      "file": "audio/where-the-light-returns.mp3",
+      "description": "Soft ambient light music for winding down.",
+      "license": "Music: \"Where the Light Returns\" — free for personal use."
     }
   ]
 }

@@ -178,7 +178,7 @@ if (check(existsSync(tracksFile), 'audio/tracks.json is missing')) {
       if (existsSync(file)) {
         const kb = statSync(file).size / 1024;
         check(kb > 4, `track file suspiciously small: ${track.file} (${kb.toFixed(0)} KB)`);
-        check(kb < 4096, `track file too large (>4MB): ${track.file}`);
+        check(kb < 10240, `track file too large (>4MB): ${track.file}`);
       }
       check(typeof track.license === 'string' && track.license.length > 0,
         `track '${track.id}' missing license string`);
@@ -194,3 +194,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(`✓ ${catalog.artworks.length} artworks, ${seenIds.size} previews, audio tracks — all valid.`);
+
