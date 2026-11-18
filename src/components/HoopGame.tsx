@@ -516,14 +516,12 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
   }, []);
 
   const handleUp = useCallback(
-    (clientX: number, clientY: number, timeStamp: number) => {
+    (_: number, __: number, timeStamp: number) => {
       detachWindowListeners();
       const drag = dragRef.current;
       dragRef.current = null;
       const layout = layoutRef.current;
-      const canvas = canvasRef.current;
-      if (!drag || !layout || !canvas) return;
-      const rect = canvas.getBoundingClientRect();
+      if (!drag || !layout) return;
       const ball = ballRef.current;
       if (ball.state !== 'drag') return;
       // drag.samples already ends with { x: drag.lastX, y: drag.lastY } from the
