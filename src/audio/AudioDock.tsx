@@ -3,7 +3,7 @@ import { assetUrl } from '../data/catalog';
 import { audioService, type TrackInfo, type TrackList } from './audioService';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import { IconButton } from '../components/ui/IconButton';
-import { useToast } from '../components/ui/toastContext';
+import { useToast } from '../components/ui/useToast';
 import { IconMusic, IconMute, IconPause, IconPlay, IconVolume } from '../components/icons';
 
 /**
