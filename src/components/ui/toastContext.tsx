@@ -1,3 +1,8 @@
+/**
+ * Persistent ambience toast notifications — mounted once at app root.
+ * Emits via a module-level singleton so any component can call useToast()
+ * without prop-drilling.
+ */
 import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from 'react';
 
 /**
@@ -26,13 +31,25 @@ export interface ToastOptions {
   duration?: number;
 }
 
-interface ToastContextValue {
+export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
 }
 
 export const ToastContext = createContext<ToastContextValue | null>(null);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+/**
+ * Export useToast as a standalone function so it can be imported by
+ * components without importing the ToastProvider component.
+ */
+export function useToast(): ToastContextValue {
+  const ctx = useContext(ToastContext);
+  if (!ctx) {
+    throw new Error('useToast must be used inside <ToastProvider>');
+  }
+  return ctx;
+}
+
+export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextIdRef = useRef(1);
   const timersRef = useRef(new Map<number, number>());
