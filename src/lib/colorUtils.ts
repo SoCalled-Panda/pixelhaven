@@ -17,7 +17,7 @@ export function hexToRgb(hex: string): [number, number, number] {
 /**
  * Convert an [r, g, b] array to a hex color string (#RRGGBB).
  */
-export function rgbToHex(rgb: number[]): string {
+export function rgbToHex([r, g, b]: number[]): string {
   const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
   return `#${c(rgb[0])}${c(rgb[1])}${c(rgb[2])}`;
 }
