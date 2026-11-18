@@ -1,51 +1,10 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-
-export type ToastTone = 'info' | 'success' | 'warning' | 'error';
-
-export interface ToastAction {
-  label: string;
-  onClick: () => void;
-}
-
-export interface ToastOptions {
-  message: string;
-  tone?: ToastTone;
-  action?: ToastAction;
-  /** Override auto-dismiss duration (ms). Errors stay longer. */
-  duration?: number;
-}
-
-interface ToastItem extends ToastOptions {
-  id: number;
-}
-
-interface ToastContextValue {
-  showToast: (options: ToastOptions) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
-    throw new Error('useToast must be used inside <ToastProvider>');
-  }
-  return ctx;
-}
-
-const MAX_VISIBLE = 3;
+import { useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { ToastContext } from './toastContext';
 
 /**
- * Non-intrusive toast notifications (PRD: "Failed save: ... non-intrusive warning").
- * Renders an aria-live="polite" region; auto-dismisses; supports one action.
+ * Persistent ambience toast notifications — mounted once at app root.
+ * Emits via a module-level singleton so any component can call useToast()
+ * without prop-drilling.
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);

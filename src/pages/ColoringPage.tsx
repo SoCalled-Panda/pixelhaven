@@ -17,7 +17,7 @@ import { IconButton } from '../components/ui/IconButton';
 import { Modal } from '../components/ui/Modal';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Spinner } from '../components/ui/Spinner';
-import { useToast } from '../components/ui/Toast';
+import { useToast } from '../components/ui/toastContext';
 import {
   IconArrowLeft,
   IconDownload,
