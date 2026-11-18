@@ -5,7 +5,6 @@ export type ToastInfo = {
   message: string;
   tone?: 'info' | 'success' | 'warning' | 'error';
   action?: { label: string; onClick: () => void };
-  /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
 }
 
@@ -17,17 +16,21 @@ export interface ToastOptions {
   message: string;
   tone?: ToastInfo['tone'];
   action?: { label: string; onClick: () => void };
-  /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
 }
 
-/**
- * Toast context. Kept separate so ToastProvider can export only components.
- */
-export const ToastContext = createContext<ToastContextValue | null>(null);
-
-export interface ToastContextValue {
+interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function useToast(): ToastContextValue {
+  const ctx = useContext(ToastContext);
+  if (!ctx) {
+    throw new Error('useToast must be used inside <ToastProvider>');
+  }
+  return ctx;
 }
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
