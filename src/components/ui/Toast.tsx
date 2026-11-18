@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
-import { ToastContext, type ToastContextValue, type ToastItem, type ToastOptions, MAX_VISIBLE } from './toastContext';
+import { ToastContext, type ToastItem, type ToastOptions, MAX_VISIBLE } from './toastContext';
 
 /**
  * Persistent ambience toast notifications — mounted once at app root.

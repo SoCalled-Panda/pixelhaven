@@ -35,7 +35,7 @@ export function shade(hex: string, f: number): string {
 /**
  * Convert an [r, g, b] array to a hex color string (#RRGGBB).
  */
-export function rgbToHex([r, g, b]: [number, number, number]): string {
+export function rgbToHex(rgb: number[]): string {
   const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
   return `#${c(r)}${c(g)}${c(b)}`;
 }
@@ -83,4 +83,15 @@ export function swatchInkColor(hex: string): string {
   const b = parseInt(h.slice(4, 6), 16);
   const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   return luminance > 0.58 ? 'rgba(46, 36, 52, 0.75)' : 'rgba(255, 251, 242, 0.92)';
+}
+
+/**
+ * Search matches the paint-by-numbers number, a hex prefix, or a color name.
+ */
+export function colorMatches(query: string, index: number, color: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (/^\d+$/.test(q)) return String(index).startsWith(q);
+  const hex = color.toLowerCase();
+  return hex.startsWith(q.startsWith('#') ? q : `#${q}`) || colorName(color).includes(q);
 }
