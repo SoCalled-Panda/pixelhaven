@@ -1,10 +1,15 @@
 import { createContext, useContext, useCallback, useRef, useState, useMemo, type ReactNode } from 'react';
 
-export type ToastInfo = {
+/**
+ * Toast types. Kept separate from toastContext.tsx so that toastContext.tsx
+ * only exports the <ToastProvider> component, as required by React Fast Refresh.
+ */
+export interface ToastInfo {
   id: number;
   message: string;
   tone?: 'info' | 'success' | 'warning' | 'error';
   action?: { label: string; onClick: () => void };
+  /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
 }
 
@@ -16,14 +21,15 @@ export interface ToastOptions {
   message: string;
   tone?: ToastInfo['tone'];
   action?: { label: string; onClick: () => void };
+  /** Override auto-dismiss duration (ms). Errors stay longer. */
   duration?: number;
 }
 
-interface ToastContextValue {
+export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
 }
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+export const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
