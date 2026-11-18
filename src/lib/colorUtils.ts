@@ -5,16 +5,27 @@
  * painting engine and UI components.
  */
 
+/**
+ * Convert a hex color string (#RRGGBB) to an [r, g, b] array.
+ */
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
+/**
+ * Convert an [r, g, b] array to a hex color string (#RRGGBB).
+ */
 export function rgbToHex(rgb: number[]): string {
   const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
   return `#${c(rgb[0])}${c(rgb[1])}${c(rgb[2])}`;
 }
 
+/**
+ * Rough color-name classifier so the palette search can understand words like
+ * "red", "teal" or "brown" without shipping a full color dictionary. Returns
+ * one of a small fixed vocabulary — good enough for filtering, not naming.
+ */
 export function colorName(hex: string): string {
   const h = hex.replace('#', '');
   const r = parseInt(h.slice(0, 2), 16);
@@ -42,6 +53,9 @@ export function colorName(hex: string): string {
   return 'pink';
 }
 
+/**
+ * Search matches the paint-by-numbers number, a hex prefix, or a color name.
+ */
 export function colorMatches(query: string, index: number, color: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -50,6 +64,10 @@ export function colorMatches(query: string, index: number, color: string): boole
   return hex.startsWith(q.startsWith('#') ? q : `#${q}`) || colorName(color).includes(q);
 }
 
+/**
+ * Perceived luminance of a hex color — picks a readable number-badge ink.
+ * (0.2126/0.7152/0.0722 = WCAG relative luminance weights.)
+ */
 export function swatchInkColor(hex: string): string {
   const h = hex.replace('#', '');
   const r = parseInt(h.slice(0, 2), 16);
