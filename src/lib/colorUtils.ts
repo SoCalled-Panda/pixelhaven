@@ -7,26 +7,14 @@
 
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
-/**
- * Convert an [r, g, b] array to a hex color string (#RRGGBB).
- */
-export function rgbToHex([r, g, b]: number[]): string {
+export function rgbToHex(rgb: number[]): string {
   const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
   return `#${c(rgb[0])}${c(rgb[1])}${c(rgb[2])}`;
 }
 
-/**
- * Rough color-name classifier so the palette search can understand words like
- * "red", "teal" or "brown" without shipping a full color dictionary. Returns
- * one of a small fixed vocabulary — good enough for filtering, not naming.
- */
 export function colorName(hex: string): string {
   const h = hex.replace('#', '');
   const r = parseInt(h.slice(0, 2), 16);
@@ -54,15 +42,19 @@ export function colorName(hex: string): string {
   return 'pink';
 }
 
-/**
- * Rough color-name classifier so the palette search can understand words like
- * "red", "teal" or "brown" without shipping a full color dictionary. Returns
- * one of a small fixed vocabulary — good enough for filtering, not naming.
- */
 export function colorMatches(query: string, index: number, color: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   if (/^\d+$/.test(q)) return String(index).startsWith(q);
   const hex = color.toLowerCase();
   return hex.startsWith(q.startsWith('#') ? q : `#${q}`) || colorName(color).includes(q);
+}
+
+export function swatchInkColor(hex: string): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.58 ? 'rgba(46, 36, 52, 0.75)' : 'rgba(255, 251, 242, 0.92)';
 }
