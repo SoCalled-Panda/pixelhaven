@@ -359,3 +359,47 @@ while keeping the original per-cell coloring."*
   121/121 green. E2E verified in the browser: real JPEG import → review →
   play → fill 46% → eraser → brush → undo/redo → reload persistence →
   gallery badge → delete.)*
+
+## T. Review feedback round 9 — hoop upload + lighter boards with smooth display
+
+- [x] **Basketball upload mini-game.** *(The pick step of the photo import is
+  now the "Upload files — drag and drop, or take the shot" court from the
+  mood board: the picked file becomes the ball (the photo clipped into a
+  circle, fallback a classic seamed basketball), the dashed "Drop files
+  here" backboard hangs over an orange rim with an animated net, and an
+  "Uploaded N" badge counts the player's saved imports. Drag & flick physics:
+  gravity, floor/wall/backboard bounces, rim-end colliders, launch velocity
+  sampled from the last ~120 ms of pointer motion, a gentle magnet so shots
+  feel fair, trail dots, confetti + net swish + tiny WebAudio blips on a
+  goal. A miss resets the ball for another try; the "Continue — skip the
+  game" button converts without playing; arrow keys move the ball and Space
+  shoots (keyboard path ignores focus on real controls); files can also be
+  dropped onto the court to swap the ball mid-game.)*
+- [x] **128² boards, "DLSS-style" smooth display.** *(The 256×256 HD tier
+  had 4× the cells a cozy session wants — coloring start-to-finish dragged.
+  All 12 built-ins regenerated at 128×128 (painters still rasterize at 512²,
+  now box-downsampled 4×), palette tightened to 80-160 colors (102-139
+  actual) so regions stay chunky and the fill tool sweeps more per click;
+  contentVersion bumps 7→8 so old 256² saves exit cleanly. Photo imports
+  share the sizing (PHOTO_BOARD_SIZE 128, quantize target 130, ≤150 colors).
+  The "DLSS or sth" half: the renderer now enables high-quality bilinear
+  smoothing whenever the on-screen cell scale drops below the 8 px/cell
+  cache resolution (SMOOTH_SCALE_MAX) — the zoomed-out overview reads as a
+  soft painterly picture instead of an aliased pixel grid — and switches
+  back to crisp nearest-neighbor once cells are big enough to color
+  precisely. Overlays (grid lines, numbers, fill preview) stay vector-crisp
+  at every zoom.)*
+- [x] **Tests & validation.** *(Release gate updated: HD tier = 128×128 with
+  80..160 paintable colors. New unit tests pin PHOTO_BOARD_SIZE = 128 and
+  the ≤150-color import band; 122/122 green. typecheck + eslint + build +
+  validate:assets all pass; E2E re-verified the full loop — wall-bounce miss
+  (ball resets, play again), under-rim flick goal, conversion, review,
+  coloring with fill on the new boards, and the Continue skip path.)*
+- [x] **Round-9 bug fix: imports were silently oversized.** *(E2E caught it —
+  the browser pipeline quantized the raw 2× supersampled raster, so round-8
+  imports shipped as 512² boards (the review text claimed "256×256").
+  `boxDownsample` is now ported from `pbn-lib.mjs` and runs between
+  rasterization and quantization, so imports are exactly
+  `PHOTO_BOARD_SIZE²` (128²); regression tests pin the block-average math
+  and the size contract. `hashCanvas` keeps hashing the full raster for
+  stable seeds.)*

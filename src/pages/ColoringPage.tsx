@@ -198,7 +198,7 @@ function Studio({
       rendererRef.current?.zoomAtPoint(
         event.clientX,
         event.clientY,
-        event.deltaY < 0 ? 1.03 : 1 / 1.03,
+        event.deltaY < 0 ? 1.15 : 1 / 1.15,
       );
     };
     const onGesture = (event: Event) => event.preventDefault();
@@ -565,7 +565,9 @@ function Studio({
           />
           {/* Finished-picture reference card, top-left (reference-app parity). */}
           <ReferencePreview src={previewUrl} title={artwork.title} />
-          <div className="studio__zoom" role="group" aria-label="Zoom and move controls">
+          {/* Side rail (review round 10): view controls + tools + save actions
+              stacked in one column next to the canvas instead of a bottom bar. */}
+          <div className="studio__rail" role="group" aria-label="View and editing tools">
             <IconButton
               icon={<IconMove />}
               label="Move around the picture"
@@ -573,13 +575,14 @@ function Studio({
               pressed={panMode}
               onClick={() => setPanMode((value) => !value)}
             />
-            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(1.08)} />
-            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / 1.08)} />
+            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(1.3)} />
+            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / 1.3)} />
             <IconButton
               icon={<IconFit />}
               label="Fit whole picture"
               onClick={() => rendererRef.current?.fit()}
             />
+            <span className="studio__rail-sep" aria-hidden="true" />
             <IconButton
               icon={<IconFill />}
               label="Fill a whole area"
@@ -597,11 +600,25 @@ function Studio({
             <IconButton icon={<IconUndo />} label="Undo" onClick={session.undo} disabled={!session.canUndo} />
             <IconButton icon={<IconRedo />} label="Redo" onClick={session.redo} disabled={!session.canRedo} />
             <IconButton icon={<IconTrash />} label="Reset picture…" onClick={() => setResetOpen(true)} />
+            <span className="studio__rail-sep" aria-hidden="true" />
             <IconButton icon={<IconDownload />} label="Export save file" onClick={handleExport} />
             <IconButton
               icon={<IconUpload />}
               label="Import save file"
               onClick={() => fileInputRef.current?.click()}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              aria-hidden="true"
+              tabIndex={-1}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleImportFile(file);
+                event.target.value = ''; // allow re-selecting the same file
+              }}
             />
           </div>
         </div>
@@ -620,19 +637,6 @@ function Studio({
           selected={session.selectedColor}
           onSelect={session.selectColor}
           perColor={progress.perColor}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          className="sr-only"
-          aria-hidden="true"
-          tabIndex={-1}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) void handleImportFile(file);
-            event.target.value = ''; // allow re-selecting the same file
-          }}
         />
       </div>
 

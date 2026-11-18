@@ -1,6 +1,6 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
- * PixelHaven asset validation â€” release gate (checklist Â§C).
+ * PixelHaven asset validation — release gate (checklist §C).
  *
  * Validates catalog.json, every artwork manifest (schema, dimensions, mask
  * charset, palette), preview files, and the audio track manifest. Exits 1 on
@@ -15,7 +15,7 @@ const ART = join(ROOT, 'public', 'artwork');
 const AUDIO = join(ROOT, 'public', 'audio');
 
 const errors = [];
-const warn = (msg) => console.warn(`  âš  ${msg}`);
+const warn = (msg) => console.warn(`  ⚠ ${msg}`);
 const fail = (msg) => errors.push(msg);
 
 const HEX = /^#[0-9a-f]{6}$/;
@@ -37,7 +37,7 @@ let catalog;
 try {
   catalog = JSON.parse(readFileSync(join(ART, 'catalog.json'), 'utf8'));
 } catch (e) {
-  console.error(`  âœ— catalog.json is not valid JSON: ${e.message}`);
+  console.error(`  ✗ catalog.json is not valid JSON: ${e.message}`);
   process.exit(1);
 }
 
@@ -102,11 +102,13 @@ for (const entry of catalog.artworks ?? []) {
       if (valid && covered === m.width) colorable += covered;
       else fail(`[${id}] rle row ${y} does not decode to exactly ${m.width} cells`);
     });
-    // HD tier quality bar (round 6): 100-200 paintable colors at 256Â².
+    // HD tier quality bar (round 9): 80-160 paintable colors at 128² — a
+    // 4× lighter session than the round-6 256² boards, still painterly
+    // thanks to the smooth-upscaled display.
     if (entry.tier === 'hd') {
-      check(m.palette.length >= 101 && m.palette.length <= 201,
-        `[${id}] HD tier requires 100..200 paintable colors (found ${m.palette.length - 1})`);
-      check(m.width === 256 && m.height === 256, `[${id}] HD tier boards must be 256Ã—256`);
+      check(m.palette.length >= 81 && m.palette.length <= 161,
+        `[${id}] HD tier requires 80..160 paintable colors (found ${m.palette.length - 1})`);
+      check(m.width === 128 && m.height === 128, `[${id}] HD tier boards must be 128×128`);
     }
   } else {
     // Mask: dimensions + charset + colorable palette refs + at least one colorable.
@@ -176,7 +178,7 @@ if (check(existsSync(tracksFile), 'audio/tracks.json is missing')) {
       if (existsSync(file)) {
         const kb = statSync(file).size / 1024;
         check(kb > 4, `track file suspiciously small: ${track.file} (${kb.toFixed(0)} KB)`);
-        check(kb < 10240, `track file too large (>10MB): ${track.file}`);
+        check(kb < 4096, `track file too large (>4MB): ${track.file}`);
       }
       check(typeof track.license === 'string' && track.license.length > 0,
         `track '${track.id}' missing license string`);
@@ -188,7 +190,7 @@ if (check(existsSync(tracksFile), 'audio/tracks.json is missing')) {
 
 if (errors.length > 0) {
   console.error(`\nAsset validation FAILED with ${errors.length} error(s):`);
-  for (const e of errors) console.error(`  âœ— ${e}`);
+  for (const e of errors) console.error(`  ✗ ${e}`);
   process.exit(1);
 }
-console.log(`âœ“ ${catalog.artworks.length} artworks, ${seenIds.size} previews, audio tracks â€” all valid.`);
+console.log(`✓ ${catalog.artworks.length} artworks, ${seenIds.size} previews, audio tracks — all valid.`);

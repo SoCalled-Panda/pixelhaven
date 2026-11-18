@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   convertPhotoToArtwork,
@@ -11,6 +11,7 @@ import {
   makeCustomArtworkId,
   type CustomArtworkRecord,
 } from '../data/customArtworks';
+import { HoopGame } from './HoopGame';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
 import { Spinner } from './ui/Spinner';
@@ -18,6 +19,8 @@ import { IconImage, IconPlus } from './icons';
 
 type Phase =
   | { kind: 'idle' }
+  /** The picked photo is on the court — shoot a goal (or Continue) to convert. */
+  | { kind: 'hoop'; file: File; ballUrl: string }
   | { kind: 'converting'; step: string; sourceUrl: string | null }
   | { kind: 'review'; source: CanvasImageSource; sourceUrl: string; converted: ConvertedArtwork }
   | { kind: 'error'; message: string };
@@ -33,27 +36,42 @@ function titleFromFileName(name: string): string {
 }
 
 /**
- * "Add your photo" gallery cell + import wizard (round 8): pick an image,
- * the app converts it into a paint-by-number board with the same pipeline
- * used for the built-in HD set, shows a side-by-side review, then saves it
- * to IndexedDB and opens the coloring page. No upload anywhere — the photo
- * never leaves the browser.
+ * "Add your photo" gallery cell + import wizard (round 8, court edition
+ * round 9): pick an image and it lands on the basketball court as the ball.
+ * Sink a shot (or press Continue) and the app converts it into a
+ * paint-by-number board with the same pipeline used for the built-in HD
+ * set, shows a side-by-side review, then saves it to IndexedDB and opens
+ * the coloring page. No upload anywhere — the photo never leaves the
+ * browser.
  */
-export function PhotoImport({ onImported }: { onImported: (record: CustomArtworkRecord) => void }) {
+export function PhotoImport({
+  onImported,
+  importsCount = 0,
+}: {
+  onImported: (record: CustomArtworkRecord) => void;
+  importsCount?: number;
+}) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [title, setTitle] = useState('My photo');
   const [saving, setSaving] = useState(false);
 
+  // The object URL behind the file card is revoked as soon as the game ends.
+  const ballUrlRef = useRef<string | null>(null);
+  const releaseBallUrl = () => {
+    if (ballUrlRef.current) {
+      URL.revokeObjectURL(ballUrlRef.current);
+      ballUrlRef.current = null;
+    }
+  };
+  useEffect(() => releaseBallUrl, []);
+
   const openPicker = () => inputRef.current?.click();
 
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setPhase({ kind: 'error', message: 'That file is not an image. Try a JPG, PNG or WebP photo.' });
-      return;
-    }
+  /** The file went through (or Continue was pressed) → run the pipeline. */
+  const startConversion = async (file: File) => {
+    releaseBallUrl();
     setPhase({ kind: 'converting', step: 'Reading your photo…', sourceUrl: null });
     try {
       const source = await loadImageSource(file);
@@ -76,6 +94,18 @@ export function PhotoImport({ onImported }: { onImported: (record: CustomArtwork
             : 'Something went wrong while converting that photo.',
       });
     }
+  };
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setPhase({ kind: 'error', message: 'That file is not an image. Try a JPG, PNG or WebP photo.' });
+      return;
+    }
+    releaseBallUrl();
+    const ballUrl = URL.createObjectURL(file);
+    ballUrlRef.current = ballUrl;
+    setPhase({ kind: 'hoop', file, ballUrl });
   };
 
   const startColoring = async () => {
@@ -124,25 +154,40 @@ export function PhotoImport({ onImported }: { onImported: (record: CustomArtwork
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = ''; // allow re-picking the same file
-          void handleFile(file);
+          handleFile(file);
         }}
       />
 
       <Modal
         open={modalOpen}
-        wide={phase.kind === 'review'}
+        wide={phase.kind === 'review' || phase.kind === 'hoop'}
         title={
-          phase.kind === 'review'
-            ? 'Your coloring page is ready'
-            : phase.kind === 'error'
-              ? 'Hmm, that did not work'
-              : 'Making your coloring page'
+          phase.kind === 'hoop'
+            ? 'Upload files'
+            : phase.kind === 'review'
+              ? 'Your coloring page is ready'
+              : phase.kind === 'error'
+                ? 'Hmm, that did not work'
+                : 'Making your coloring page'
         }
         onClose={() => {
           if (phase.kind === 'converting' || saving) return; // not cancellable mid-flight
+          releaseBallUrl();
           setPhase({ kind: 'idle' });
         }}
       >
+        {phase.kind === 'hoop' && (
+          <HoopGame
+            ballSrc={phase.ballUrl}
+            fileName={phase.file.name}
+            importsCount={importsCount}
+            onScore={() => void startConversion(phase.file)}
+            onContinue={() => void startConversion(phase.file)}
+            onPickFile={openPicker}
+            onDropFile={handleFile}
+          />
+        )}
+
         {phase.kind === 'converting' && (
           <div className="import-progress" aria-live="polite">
             {phase.sourceUrl ? (
@@ -173,7 +218,8 @@ export function PhotoImport({ onImported }: { onImported: (record: CustomArtwork
               </figure>
             </div>
             <p className="import-review__stats">
-              {phase.converted.usedColors} colors · {phase.converted.regions} regions · 256×256 · HD
+              {phase.converted.usedColors} colors · {phase.converted.regions} regions ·{' '}
+              {phase.converted.manifest.width}×{phase.converted.manifest.height} · HD
             </p>
             <label className="import-review__field">
               <span>Name your picture</span>

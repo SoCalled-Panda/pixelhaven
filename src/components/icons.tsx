@@ -244,3 +244,13 @@ export function IconClose(props: IconProps) {
     </Svg>
   );
 }
+
+/** Magnifying glass — palette color search (review round 10). */
+export function IconSearch(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.8-3.8" />
+    </Svg>
+  );
+}

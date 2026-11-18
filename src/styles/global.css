@@ -620,15 +620,14 @@ button {
   align-items: center;
   gap: var(--space-3);
   padding-block: var(--space-2) var(--space-5);
-  background: #ffffff;
-  border-radius: var(--radius-lg);
 }
 
 .studio__canvas-shell {
   position: relative;
   width: 100%;
   padding: var(--space-3);
-  background: var(--color-surface);
+  /* Review round 10: the board sits on white. */
+  background: #ffffff;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -638,7 +637,6 @@ button {
   display: block;
   max-width: 100%;
   border-radius: var(--radius-sm);
-  background: #ffffff;
   /* The canvas is a painting surface, not a scroll surface: */
   touch-action: none;
   cursor: crosshair;
@@ -675,16 +673,28 @@ button {
   text-align: center;
 }
 
-/* Floating zoom controls over the canvas */
-.studio__zoom {
+/* Side rail over the canvas (review round 10): view controls, tools and
+   save actions stacked next to the canvas instead of a bottom toolbar.
+   Wraps into a second column when the shell is too short (small screens). */
+.studio__rail {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
+  bottom: var(--space-2);
   display: flex;
-  flex-direction: column;
+  flex-flow: column wrap;
+  align-content: flex-end;
+  justify-content: flex-start;
   gap: var(--space-1);
   z-index: 3;
   opacity: 0.92;
+}
+
+.studio__rail-sep {
+  align-self: center;
+  width: 22px;
+  border-top: 1.5px dashed var(--color-border-strong);
+  margin-block: 2px;
 }
 
 /* Finished-picture reference card, top-left over the canvas */
@@ -693,8 +703,9 @@ button {
   top: var(--space-2);
   left: var(--space-2);
   z-index: 3;
-  width: 200px;
-  background: var(--color-surface-raised);
+  width: 104px;
+  /* Review round 10: white behind the chosen image. */
+  background: #ffffff;
   border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
@@ -781,14 +792,14 @@ button {
   height: 18px;
 }
 
-.studio__zoom .icon-btn {
+.studio__rail .icon-btn {
   width: 36px;
   height: 36px;
   background: rgb(255 251 242 / 0.92);
   box-shadow: var(--shadow-sm);
 }
 
-.studio__zoom .icon-btn svg {
+.studio__rail .icon-btn svg {
   width: 18px;
   height: 18px;
 }
@@ -807,10 +818,96 @@ button {
   border-top: 1.5px dashed var(--color-border);
 }
 
+/* Palette wrapper: search row on top, swatch grid below (review round 10). */
+.palette-wrap,
+.palette--dense-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 100%;
+}
+
 .palette {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-2);
+}
+
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(340px, 100%);
+  margin-bottom: var(--space-2);
+}
+
+.palette-search__icon {
+  display: inline-flex;
+  color: var(--color-ink-faint);
+}
+
+.palette-search__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.palette-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background: var(--color-surface-raised);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.palette-search__input::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.palette-search__input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.palette-search__count {
+  font-size: var(--text-xs);
+  color: var(--color-ink-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.palette-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.palette-search__clear:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
+}
+
+.palette-search__clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.palette-search__empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
 }
 
 /* High-fidelity sets (100+ colors): compact scrollable grid so the studio
@@ -819,9 +916,8 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
   gap: 5px;
-  flex: 1 1 100%;
   min-width: 0;
-  max-height: 200px;
+  max-height: 138px;
   overflow-y: auto;
   padding: 6px;
   border: 1.5px dashed var(--color-border);
@@ -844,29 +940,6 @@ button {
 
 .palette--dense .palette__pct {
   font-size: 8.5px;
-}
-
-.palette__search {
-  grid-column: span 3;
-  width: 100%;
-  padding: 8px 12px;
-  margin-bottom: 6px;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  outline: none;
-}
-
-.palette__search:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
-.palette__search::placeholder {
-  color: var(--color-ink-faint);
 }
 
 /* Swatch + its per-color progress caption, kept as one column. */
@@ -932,12 +1005,6 @@ button {
 .palette__pct--done {
   color: var(--color-accent-deep);
   font-weight: 700;
-}
-
-.studio__tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .state-block__actions {
@@ -1359,6 +1426,115 @@ button {
   .import-review__arrow {
     transform: rotate(90deg);
     justify-self: center;
+  }
+}
+
+/* --------------------------------------------------- hoop upload mini-game */
+.hoop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0; /* keep the court inside the panel on narrow screens */
+}
+
+.hoop__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.hoop__tagline {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.hoop__badge {
+  flex: none;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hoop__badge strong {
+  font-size: var(--text-sm);
+}
+
+.hoop__court {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border: 1.5px solid var(--color-border);
+  touch-action: none; /* the court owns every pointer gesture */
+}
+
+.hoop__court canvas {
+  display: block;
+  max-width: 100%;
+  cursor: grab;
+}
+
+.hoop--drophint .hoop__court {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.hoop__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  min-height: 1.4em;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.hoop__keys {
+  font-size: var(--text-xs);
+  color: var(--color-ink-faint);
+}
+
+.hoop__actions {
+  justify-content: flex-end;
+}
+
+.hoop__skip {
+  padding: 10px 18px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.hoop__skip:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.hoop__skip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+@media (max-width: 480px) {
+  .hoop__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
   }
 }
 

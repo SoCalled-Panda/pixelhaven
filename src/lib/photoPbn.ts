@@ -1,13 +1,14 @@
 /**
  * Photo → paint-by-number pipeline (browser port of scripts/pbn-lib.mjs).
  *
- * A user photo is center-cropped and rasterized at 2× supersample (512² for a
- * 256² board), perturbed with a light value-noise pass so region borders read
+ * A user photo is center-cropped and rasterized at 2× supersample (256² for a
+ * 128² board), perturbed with a light value-noise pass so region borders read
  * as painterly rather than sterile, then median-cut quantized and cleaned of
- * tiny regions — exactly the pipeline that produces the built-in HD set. The
- * result is a schema-2 manifest (RLE rows, ≤200 palette colors) that
- * `validateManifest` accepts unchanged, so the coloring engine, fill tool,
- * saves and progress need zero artwork-specific code paths.
+ * tiny regions — the same pipeline and round-9 sizing as the built-in HD set
+ * (128² keeps sessions start-to-finish; the smooth-upscaled display keeps
+ * them painterly). The result is a schema-2 manifest (RLE rows, ≤160 palette
+ * colors) that `validateManifest` accepts unchanged, so the coloring engine,
+ * fill tool, saves and progress need zero artwork-specific code paths.
  *
  * Everything below the DOM rasterization helpers is pure math on typed
  * arrays and fully deterministic for a given input + noise seed.
@@ -41,6 +42,39 @@ export interface FloatCanvas {
 
 export function createCanvas(w: number, h: number): FloatCanvas {
   return { w, h, data: new Float32Array(w * h * 3) };
+}
+
+/**
+ * Average factor×factor pixel blocks into one — the supersample reducer.
+ * The browser port quantized the raw 2× raster before round 9, which made
+ * imports silently 2× bigger than intended (512² boards!); this restores
+ * parity with the Node pipeline (`scripts/pbn-lib.mjs boxDownsample`).
+ */
+export function boxDownsample(cv: FloatCanvas, factor: number): FloatCanvas {
+  const w = Math.floor(cv.w / factor);
+  const h = Math.floor(cv.h / factor);
+  const out = createCanvas(w, h);
+  const f2 = factor * factor;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let dy = 0; dy < factor; dy++) {
+        for (let dx = 0; dx < factor; dx++) {
+          const i = ((y * factor + dy) * cv.w + x * factor + dx) * 3;
+          r += cv.data[i];
+          g += cv.data[i + 1];
+          b += cv.data[i + 2];
+        }
+      }
+      const o = (y * w + x) * 3;
+      out.data[o] = r / f2;
+      out.data[o + 1] = g / f2;
+      out.data[o + 2] = b / f2;
+    }
+  }
+  return out;
 }
 
 /** Copy an RGBA ImageData buffer into a float RGB canvas (alpha dropped). */
@@ -347,9 +381,9 @@ export function rleEncodeRows(grid: Int32Array, w: number, h: number): string[] 
 /* ---------------------------------------------------- photo-specific steps */
 
 /** Settings shared by the DOM wrapper and the pure pipeline. */
-export const PHOTO_BOARD_SIZE = 256;
+export const PHOTO_BOARD_SIZE = 128;
 export const PHOTO_SUPERSAMPLE = 2;
-export const PHOTO_PAPER = '#ffffff'; // white paper for uncolored cells
+export const PHOTO_PAPER = '#ffffff'; // board paper is always white (round 10)
 export const PHOTO_OUTLINE = '#2b2620';
 
 /**
@@ -399,12 +433,15 @@ export function buildPhotoGrid(cv: FloatCanvas, seed: number): PhotoPipelineResu
   const noise = makeNoise(seed);
   texturePass(cv, noise, 8, 0.05);
   const { grid, palette, usedColors } = quantizeCanvas(cv, {
-    colorTarget: 150,
-    minSize: 4,
-    minColors: 60,
-    maxColors: 200,
+    // Mirrors the built-in round-9 sizing: 128² cells with a tightened
+    // palette keep regions chunky (fill sweeps more per click) and the
+    // session readable start-to-finish.
+    colorTarget: 130,
+    minSize: 5,
+    minColors: 56,
+    maxColors: 150,
   });
-  const hexPalette = ['#ffffff', ...palette.map(rgbToHex)];
+  const hexPalette = [derivePaper(palette), ...palette.map(rgbToHex)];
   return {
     grid,
     hexPalette,
@@ -538,16 +575,25 @@ export interface ConvertedArtwork {
 /**
  * Full photo → artwork conversion. Yields to the UI between stages so the
  * processing spinner stays animated on the main thread. Throws with a
- * user-presentable message on failure.
+ * user-presentable message on failure. The manifest is always exactly
+ * PHOTO_BOARD_SIZE² (128×128 in round 9).
  */
 export async function convertPhotoToArtwork(source: CanvasImageSource, options: ConvertOptions): Promise<ConvertedArtwork> {
   await yieldToUi();
-  const cv = rasterizeToSquare(source, PHOTO_BOARD_SIZE, PHOTO_SUPERSAMPLE);
+  const raster = rasterizeToSquare(source, PHOTO_BOARD_SIZE, PHOTO_SUPERSAMPLE);
+  // Reduce the supersample so the board is exactly PHOTO_BOARD_SIZE² —
+  // parity with the Node pipeline (this step was missing pre-round 9, which
+  // made imports quantize the raw 2× raster and land 2× oversized).
+  const cv = boxDownsample(raster, PHOTO_SUPERSAMPLE);
   await yieldToUi();
-  const result = buildPhotoGrid(cv, hashCanvas(cv));
+  const result = buildPhotoGrid(cv, hashCanvas(raster));
   if (result.usedColors < 2) {
     throw new Error('This photo is too flat to turn into a coloring page');
   }
+  // Review round 10: the board's paper is always white, never a color sampled
+  // from the photo — uncolored cells, previews and the manifest paper all stay
+  // in sync through hexPalette[0].
+  result.hexPalette[0] = PHOTO_PAPER;
   await yieldToUi();
   const manifest: ArtworkManifest = {
     id: options.id,
@@ -556,7 +602,7 @@ export async function convertPhotoToArtwork(source: CanvasImageSource, options: 
     contentVersion: 1,
     width: result.size,
     height: result.size,
-    paperColor: '#ffffff',
+    paperColor: PHOTO_PAPER,
     outlineColor: PHOTO_OUTLINE,
     palette: result.hexPalette,
     rle: rleEncodeRows(result.grid, result.size, result.size),

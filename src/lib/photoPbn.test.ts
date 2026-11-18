@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  boxDownsample,
   buildPhotoGrid,
   countRegions,
   createCanvas,
   derivePaper,
   hashCanvas,
   mergeSmallRegions,
+  PHOTO_BOARD_SIZE,
   PHOTO_OUTLINE,
   PHOTO_PAPER,
   PHOTO_SUPERSAMPLE,
@@ -223,11 +225,44 @@ describe('derivePaper', () => {
   });
 });
 
+describe('boxDownsample (supersample reducer)', () => {
+  it('averages factor×factor blocks exactly like the Node pipeline', () => {
+    const cv = createCanvas(2, 2);
+    // One 2×2 block: corner values 10/20/30/40 → mean 25 everywhere.
+    cv.data.set([10, 10, 10, 20, 20, 20, 30, 30, 30, 40, 40, 40]);
+    const down = boxDownsample(cv, 2);
+    expect(down.w).toBe(1);
+    expect(down.h).toBe(1);
+    expect(down.data[0]).toBeCloseTo(25);
+    expect(down.data[1]).toBeCloseTo(25);
+    expect(down.data[2]).toBeCloseTo(25);
+  });
+
+  it('keeps the conversion core at PHOTO_BOARD_SIZE² (round-9 regression)', () => {
+    // Regression: pre-round-9 the browser port quantized the raw 2× raster,
+    // silently shipping 512² imports. The core must see the reduced board.
+    const raster = makeTestCanvas(PHOTO_BOARD_SIZE * PHOTO_SUPERSAMPLE, PHOTO_BOARD_SIZE * PHOTO_SUPERSAMPLE);
+    const result = buildPhotoGrid(boxDownsample(raster, PHOTO_SUPERSAMPLE), 99);
+    expect(result.size).toBe(PHOTO_BOARD_SIZE);
+  });
+});
+
 describe('constants', () => {
-  it('uses the app canvas paper and a 2× supersample', () => {
-    expect(PHOTO_PAPER).toMatch(/^#[0-9a-f]{6}$/);
+  it('uses white board paper, a 2× supersample and the round-9 128² board', () => {
+    // Review round 10: imported boards always sit on white paper.
+    expect(PHOTO_PAPER).toBe('#ffffff');
     expect(PHOTO_OUTLINE).toMatch(/^#[0-9a-f]{6}$/);
     expect(PHOTO_SUPERSAMPLE).toBe(2);
+    // Round 9: imports share the built-in set's 128² sizing — 4× fewer
+    // cells than the original 256² boards so sessions stay engaging.
+    expect(PHOTO_BOARD_SIZE).toBe(128);
     expect(rgbToHex([255, 0, 16])).toBe('#ff0010');
+  });
+
+  it('buildPhotoGrid boards land in the built-in 80..160 color band', () => {
+    const result = buildPhotoGrid(makeTestCanvas(128, 128), 777);
+    expect(result.size).toBe(128);
+    expect(result.usedColors).toBeGreaterThanOrEqual(2);
+    expect(result.usedColors).toBeLessThanOrEqual(150);
   });
 });

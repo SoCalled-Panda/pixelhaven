@@ -95,3 +95,11 @@ npm run validate:assets     # verify integrity after any change
   no external image assets — same license as the project.
 - New paint-bucket tool icon (`IconFill`, stroke-based inline SVG in the
   style of the existing icon set).
+
+## Update — review round 9
+
+- 12 HD artworks regenerated at **128×128** (80-160 paintable colors,
+  102-139 actual) with contentVersion 8; same procedural pipeline
+  (`scripts/pbn-lib.mjs` + `scripts/hifi-scenes.mjs`), same all-original,
+  generated-in-repo licensing. Imports from user photos are schema-2 boards
+  derived entirely in the browser and belong to their creators.

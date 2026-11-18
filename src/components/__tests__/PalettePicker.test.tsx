@@ -61,3 +61,75 @@ describe('PalettePicker (checklist §E)', () => {
     expect(screen.queryByText('%')).not.toBeInTheDocument();
   });
 });
+
+describe('PalettePicker color search (round 10)', () => {
+  const SEARCH_BOX = 'Search colors by number, name or hex';
+
+  /** Only swatch buttons — the search row also renders a clear button. */
+  const swatches = () => screen.getAllByRole('button', { name: /Use color/ });
+
+  const type = async (user: ReturnType<typeof userEvent.setup>, text: string) => {
+    await user.type(screen.getByRole('textbox', { name: SEARCH_BOX }), text);
+  };
+
+  it('filters swatches by paint-by-numbers number', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    await type(user, '2');
+    expect(swatches()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Use color 2' })).toBeInTheDocument();
+    expect(screen.getByText('1 of 3')).toBeInTheDocument();
+  });
+
+  it('filters by color name', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    await type(user, 'red');
+    expect(swatches()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Use color 1' })).toBeInTheDocument();
+  });
+
+  it('filters by hex prefix', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    await type(user, '#f2');
+    expect(swatches()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Use color 2' })).toBeInTheDocument();
+  });
+
+  it('still reports the true palette index from a filtered swatch', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={onSelect} />);
+    await type(user, '3');
+    await user.click(screen.getByRole('button', { name: 'Use color 3' }));
+    expect(onSelect).toHaveBeenCalledWith(3);
+  });
+
+  it('clearing the search restores the full palette', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    await type(user, '2');
+    expect(swatches()).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Clear color search' }));
+    expect(swatches()).toHaveLength(3);
+  });
+
+  it('shows an empty message when nothing matches', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    await type(user, 'zzz');
+    expect(screen.getByText('No colors match “zzz”.')).toBeInTheDocument();
+  });
+
+  it('Escape clears the search', async () => {
+    const user = userEvent.setup();
+    render(<PalettePicker palette={PALETTE} selected={1} onSelect={() => {}} />);
+    const box = screen.getByRole('textbox', { name: SEARCH_BOX });
+    await user.type(box, '2');
+    expect(swatches()).toHaveLength(1);
+    await user.keyboard('{Escape}');
+    expect(swatches()).toHaveLength(3);
+    expect(box).toHaveValue('');
+  });
+});

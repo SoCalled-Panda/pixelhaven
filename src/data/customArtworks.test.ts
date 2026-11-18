@@ -57,6 +57,22 @@ describe('CustomArtworkRepository (IndexedDB, round 8)', () => {
     expect(loaded!.previewDataUrl).toContain('data:image/png');
   });
 
+  it('migrates pre-round-10 records to white paper (round 10)', async () => {
+    // makeManifest stores the old cream paper on purpose.
+    await repo.put(makeRecord());
+    const loaded = await repo.get('custom-abc');
+    expect(loaded!.manifest.paperColor).toBe('#ffffff');
+    expect(loaded!.manifest.palette[0]).toBe('#ffffff');
+    // Colored slots are untouched by the migration.
+    expect(loaded!.manifest.palette.slice(1)).toEqual(['#e8875f', '#43364a', '#7fb069']);
+    // The fix is persisted — a fresh repository instance reads white too.
+    const second = new CustomArtworkRepository();
+    const reloaded = await second.get('custom-abc');
+    expect(reloaded!.manifest.paperColor).toBe('#ffffff');
+    const validated = validateManifest(reloaded!.manifest);
+    expect(validated.ok).toBe(true);
+  });
+
   it('stores a manifest that still passes the production validator', async () => {
     await repo.put(makeRecord());
     const loaded = await repo.get('custom-abc');

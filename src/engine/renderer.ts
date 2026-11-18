@@ -13,6 +13,14 @@ import {
 
 /** Offscreen cache resolution per cell — the board is painted once at this size. */
 export const BASE_CELL_PX = 8;
+/**
+ * Smooth-display threshold (round 9 "DLSS-style" upscale): below this
+ * on-screen scale the BASE_CELL_PX cache is being downscaled, so bilinear
+ * smoothing turns the overview into a soft painterly picture instead of an
+ * aliased pixel grid. At or above it the cache maps 1:1 or upscaled —
+ * smoothing switches off so zoomed-in coloring keeps crisp cell edges.
+ */
+export const SMOOTH_SCALE_MAX = BASE_CELL_PX;
 /** Zoom-out floor: never smaller than the fit scale (whole board visible). */
 export const MAX_ZOOM_PX = 64;
 /** Grid lines only make sense when cells are big enough to read them. */
@@ -34,7 +42,8 @@ export interface CanvasRendererOptions {
  *    so panning and zooming are a single `drawImage` (60 fps on big grids);
  *  - cell edits partially repaint the offscreen cache, then coalesce a
  *    main-canvas frame via requestAnimationFrame;
- *  - device-pixel-ratio aware; image smoothing disabled for crisp pixels.
+ *  - device-pixel-ratio aware; zoom-adaptive smoothing (soft painterly
+ *    overview, crisp pixel coloring — see SMOOTH_SCALE_MAX).
  */
 export class CanvasRenderer {
   private readonly canvas: HTMLCanvasElement;
@@ -269,7 +278,12 @@ export class CanvasRenderer {
       this.canvas.height = backingHeight;
     }
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.ctx.imageSmoothingEnabled = false;
+    // Zoom-adaptive smoothing: downscaling the cache (overview) reads best
+    // softly upscaled; coloring zoom wants hard cell edges. The flag only
+    // affects the board drawImage — overlays stay vector-crisp either way.
+    const smooth = this.view.scale < SMOOTH_SCALE_MAX;
+    this.ctx.imageSmoothingEnabled = smooth;
+    if (smooth) this.ctx.imageSmoothingQuality = 'high';
 
     // Paper backdrop (also covers panned-in empty margins).
     this.ctx.fillStyle = this.artwork.paperColor;
@@ -279,6 +293,12 @@ export class CanvasRenderer {
     const boardW = a.width * this.view.scale;
     const boardH = a.height * this.view.scale;
     this.ctx.drawImage(this.board, this.view.panX, this.view.panY, boardW, boardH);
+
+    // The board's edge (round 10): white paper must keep a visible boundary
+    // against the white shell, at every zoom level.
+    this.ctx.strokeStyle = 'rgba(67, 54, 74, 0.4)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeRect(this.view.panX - 0.75, this.view.panY - 0.75, boardW + 1.5, boardH + 1.5);
 
     if (this.options.gridLines && this.view.scale >= GRID_LINE_MIN_SCALE) {
       this.paintGridLines(vw, vh);

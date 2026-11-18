@@ -246,12 +246,12 @@ export function HomePage() {
             </Button>
           </div>
           <ul className="gallery gallery--single">
-            <PhotoImport onImported={handleImported} />
+            <PhotoImport onImported={handleImported} importsCount={customs?.size ?? 0} />
           </ul>
         </div>
       ) : (
         <ul className="gallery">
-          <PhotoImport onImported={handleImported} />
+          <PhotoImport onImported={handleImported} importsCount={customs?.size ?? 0} />
           {visible.map((item) => (
             <li key={item.id} className={item.custom ? 'gallery__cell gallery__cell--custom' : 'gallery__cell'}>
               <Link

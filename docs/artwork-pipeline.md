@@ -302,3 +302,35 @@ removes the artwork's session), and `ColoringPage` resolves `custom-*` ids from
 the store before touching the static catalog. Save files for custom boards
 remain portable as snapshots; the manifest itself lives in the browser that
 made it.
+
+## 14. Round 9 — lighter boards + smooth display
+
+Review feedback was that the 256² boards (65,536 cells) made a session drag
+from start to finish, and the pick step of the import deserved some play.
+Three changes shipped together:
+
+1. **Boards shrink to 128² (16,384 cells — a 4× lighter session).** The HD
+   painters still rasterize at their native 512²; the generator now
+   box-downsamples 4× and quantizes against a tightened palette (target 140,
+   min 5-cell regions, 80..160 colors — 102..139 in the shipped set). The
+   photo pipeline mirrors this (`PHOTO_BOARD_SIZE = 128`, quantize target
+   130, ≤150 colors). `contentVersion` bumps 7→8, so old 256² saves exit
+   through the existing content-version guard instead of mis-restoring.
+2. **Smooth display ("DLSS-style" upscale).** With fewer cells the overview
+   must not look like a coarse pixel grid, so `CanvasRenderer` now renders
+   zoom-adaptively: whenever the on-screen cell scale is below the 8 px/cell
+   offscreen-cache resolution (`SMOOTH_SCALE_MAX`), the board is drawn with
+   high-quality bilinear smoothing — the same idea as frame upscalers, fewer
+   source cells, a soft painterly result. Zooming in past the threshold
+   (cells big enough to paint precisely) flips back to crisp
+   nearest-neighbor. Overlays are unaffected either way.
+3. **The upload court.** `HoopGame.tsx` turns the picked file into a ball on
+   a basketball court (dashed "Drop files here" backboard, orange rim,
+   animated net). Physics live in one rAF loop over refs — gravity,
+   restitution bounces off floor/walls/ceiling/backboard, circle colliders
+   on both rim ends, launch velocity from the last ~120 ms of pointer
+   motion, and a mild magnet that steers near-straight drops into the rim so
+   touch shots feel fair. A goal plays a net-swish + confetti and starts the
+   conversion; a miss resets the ball for another shot; "Continue" skips the
+   game; arrow keys + Space give the game a keyboard path. Files dropped
+   onto the court replace the ball mid-game.
