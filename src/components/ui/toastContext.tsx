@@ -26,11 +26,12 @@ export interface ToastOptions {
   duration?: number;
 }
 
+// ToastContext is NOT exported - only ToastProvider exports it
+const ToastContext = createContext<ToastContextValue | null>(null);
+
 export interface ToastContextValue {
   showToast: (options: ToastOptions) => void;
 }
-
-export const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
