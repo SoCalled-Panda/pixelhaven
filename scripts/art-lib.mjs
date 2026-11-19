@@ -21,8 +21,6 @@
  *   - palmTree()    : curved tapered trunk, ring shading, 7 drooping fronds.
  */
 
-import { SIZE } from './art-lib.mjs';
-
 /* --------------------------------------------------------- color utils */
 
 export function hexToRgb(hex) {

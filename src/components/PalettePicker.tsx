@@ -78,7 +78,7 @@ export function PalettePicker({ palette, selected, onSelect, perColor }: Palette
       </div>
 
       {trimmed && visible.length === 0 ? (
-        <p className="palette-search__empty">No colors match "{trimmed}".</p>
+        <p className="palette-search__empty">No colors match “{trimmed}”.</p>
       ) : (
         <div className={dense ? 'palette palette--dense' : 'palette'}>
           {visible.map(({ color, index }) => {
