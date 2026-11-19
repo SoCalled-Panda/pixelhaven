@@ -103,3 +103,12 @@ npm run validate:assets     # verify integrity after any change
   (`scripts/pbn-lib.mjs` + `scripts/hifi-scenes.mjs`), same all-original,
   generated-in-repo licensing. Imports from user photos are schema-2 boards
   derived entirely in the browser and belong to their creators.
+
+## Update — review round 11
+
+- 12 HD artworks regenerated again with **cleaner, fillable regions**
+  (32-113 paintable colors, every colour owning at least a 12-cell region)
+  and contentVersion 9. Still the same procedural pipeline and the same
+  all-original, generated-in-repo licensing — only the quantizer's
+  small-region merge and palette settings changed. No external assets were
+  added.

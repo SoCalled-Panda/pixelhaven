@@ -18,6 +18,39 @@ import {
 import { decodeRleRow } from '../engine/grid';
 import { validateManifest } from '../data/manifest';
 
+/** Smallest 4-connected region after cleanup — the merge guarantee. */
+function minRegionSize(grid: Int32Array, w: number, h: number): number {
+  const seen = new Uint8Array(w * h);
+  let min = Number.POSITIVE_INFINITY;
+  for (let start = 0; start < w * h; start++) {
+    if (seen[start]) continue;
+    const value = grid[start];
+    const stack: number[] = [start];
+    seen[start] = 1;
+    let size = 0;
+    while (stack.length > 0) {
+      const cell = stack.pop() as number;
+      size++;
+      const x = cell % w;
+      const y = (cell - x) / w;
+      const neighbours = [
+        x > 0 ? cell - 1 : -1,
+        x < w - 1 ? cell + 1 : -1,
+        y > 0 ? cell - w : -1,
+        y < h - 1 ? cell + w : -1,
+      ];
+      for (const n of neighbours) {
+        if (n >= 0 && !seen[n] && grid[n] === value) {
+          seen[n] = 1;
+          stack.push(n);
+        }
+      }
+    }
+    min = Math.min(min, size);
+  }
+  return min;
+}
+
 /** Paint a few soft color blobs + a gradient so median cut has real work. */
 function makeTestCanvas(w: number, h: number) {
   const cv = createCanvas(w, h);
@@ -92,6 +125,32 @@ describe('mergeSmallRegions / countRegions', () => {
     mergeSmallRegions(grid, 16, 16, 2);
     expect(countRegions(grid, 16, 16)).toBe(1);
     expect(grid[8 * 16 + 8]).toBe(1);
+  });
+
+  it('merges regions smaller than the minimum as whole regions', () => {
+    const grid = new Int32Array(16 * 16).fill(1);
+    // A 3-cell streak of color 2 and a 2-cell streak of color 3: both are
+    // below minSize 8 and must be absorbed completely.
+    grid[4 * 16 + 2] = 2;
+    grid[4 * 16 + 3] = 2;
+    grid[4 * 16 + 4] = 2;
+    grid[10 * 16 + 12] = 3;
+    grid[10 * 16 + 13] = 3;
+    mergeSmallRegions(grid, 16, 16, 8);
+    expect(countRegions(grid, 16, 16)).toBe(1);
+    expect(Array.from(grid).every((v) => v === 1)).toBe(true);
+    expect(minRegionSize(grid, 16, 16)).toBe(16 * 16);
+  });
+
+  it('converges on dense speckle instead of ping-ponging forever', () => {
+    // A checkerboard is the worst case: every cell is its own 1-cell region.
+    // It settles into stripes rather than one colour, but it must terminate
+    // and no region may stay below the minimum.
+    const grid = new Int32Array(16 * 16);
+    for (let i = 0; i < grid.length; i++) grid[i] = i % 2 === 0 ? 1 : 2;
+    mergeSmallRegions(grid, 16, 16, 8);
+    expect(minRegionSize(grid, 16, 16)).toBeGreaterThanOrEqual(8);
+    expect(countRegions(grid, 16, 16)).toBeLessThan(256);
   });
 
   it('leaves healthy regions alone', () => {
@@ -259,10 +318,10 @@ describe('constants', () => {
     expect(rgbToHex([255, 0, 16])).toBe('#ff0010');
   });
 
-  it('buildPhotoGrid boards land in the built-in 80..160 color band', () => {
+  it('buildPhotoGrid boards land in the retuned 24..128 color band', () => {
     const result = buildPhotoGrid(makeTestCanvas(128, 128), 777);
     expect(result.size).toBe(128);
     expect(result.usedColors).toBeGreaterThanOrEqual(2);
-    expect(result.usedColors).toBeLessThanOrEqual(150);
+    expect(result.usedColors).toBeLessThanOrEqual(128);
   });
 });

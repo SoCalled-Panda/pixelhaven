@@ -242,43 +242,75 @@ export function countRegions(grid: Int32Array, w: number, h: number): number {
   return labelRegions(grid, w, h).sizes.length;
 }
 
-/** Merge regions smaller than minSize into their dominant neighbor region. */
+/**
+ * Merge regions smaller than minSize into their dominant neighbour region.
+ * Whole regions are reassigned (not individual cells) and processed smallest
+ * first, repeating until every region meets the minimum. Each reassignment
+ * removes a region, so the loop always converges — this is what keeps photo
+ * imports from filling up with 1-cell speckle.
+ */
 export function mergeSmallRegions(grid: Int32Array, w: number, h: number, minSize: number): number {
-  const { labels, sizes } = labelRegions(grid, w, h);
-  // Value per region label (labels are static while we only rewrite grid).
-  const labelValue = new Int32Array(sizes.length);
-  for (let cell = 0; cell < w * h; cell++) labelValue[labels[cell]] = grid[cell];
-
+  if (minSize <= 1) return 0;
   let merged = 0;
-  for (let cell = 0; cell < w * h; cell++) {
-    const label = labels[cell];
-    if (sizes[label] >= minSize) continue;
-    const x = cell % w;
-    const y = (cell - x) / w;
-    const counts = new Map<number, number>();
-    const see = (n: number) => {
-      if (n < 0 || n >= w * h || labels[n] === label) return;
-      counts.set(labels[n], (counts.get(labels[n]) ?? 0) + 1);
-    };
-    see(y > 0 ? cell - w : -1);
-    see(y < h - 1 ? cell + w : -1);
-    see(x > 0 ? cell - 1 : -1);
-    see(x < w - 1 ? cell + 1 : -1);
-    let best = -1;
-    let bestCount = 0;
-    for (const [labelId, count] of counts) {
-      if (
-        count > bestCount ||
-        (count === bestCount && best >= 0 && labelValue[labelId] === labelValue[best] && sizes[labelId] > sizes[best])
-      ) {
-        best = labelId;
-        bestCount = count;
+  for (let pass = 0; pass < 64; pass++) {
+    const { labels, sizes } = labelRegions(grid, w, h);
+    const small: number[] = [];
+    for (let id = 0; id < sizes.length; id++) if (sizes[id] < minSize) small.push(id);
+    if (small.length === 0) break;
+
+    const cellsOf = new Map<number, number[]>();
+    for (const id of small) cellsOf.set(id, []);
+    for (let cell = 0; cell < w * h; cell++) {
+      const list = cellsOf.get(labels[cell]);
+      if (list) list.push(cell);
+    }
+
+    const valueSize = new Map<number, number>();
+    for (let cell = 0; cell < w * h; cell++) {
+      const v = grid[cell];
+      valueSize.set(v, (valueSize.get(v) ?? 0) + 1);
+    }
+
+    small.sort((a, b) => sizes[a] - sizes[b]);
+    let changed = 0;
+    for (const id of small) {
+      const cells = cellsOf.get(id);
+      if (!cells || cells.length === 0) continue;
+      const value = grid[cells[0]];
+      const counts = new Map<number, number>();
+      for (const cell of cells) {
+        const x = cell % w;
+        const y = (cell - x) / w;
+        const see = (n: number) => {
+          if (n < 0 || n >= w * h) return;
+          const other = grid[n];
+          if (other === value) return;
+          counts.set(other, (counts.get(other) ?? 0) + 1);
+        };
+        see(y > 0 ? cell - w : -1);
+        see(y < h - 1 ? cell + w : -1);
+        see(x > 0 ? cell - 1 : -1);
+        see(x < w - 1 ? cell + 1 : -1);
       }
+      let best = -1;
+      let bestCount = 0;
+      for (const [other, count] of counts) {
+        if (
+          count > bestCount ||
+          (count === bestCount && (valueSize.get(other) ?? 0) > (valueSize.get(best) ?? 0))
+        ) {
+          best = other;
+          bestCount = count;
+        }
+      }
+      if (best < 0) continue;
+      for (const cell of cells) grid[cell] = best;
+      valueSize.set(best, (valueSize.get(best) ?? 0) + cells.length);
+      valueSize.set(value, Math.max(0, (valueSize.get(value) ?? 0) - cells.length));
+      merged += cells.length;
+      changed++;
     }
-    if (best >= 0) {
-      grid[cell] = labelValue[best];
-      merged++;
-    }
+    if (changed === 0) break;
   }
   return merged;
 }
@@ -433,13 +465,13 @@ export function buildPhotoGrid(cv: FloatCanvas, seed: number): PhotoPipelineResu
   const noise = makeNoise(seed);
   texturePass(cv, noise, 8, 0.05);
   const { grid, palette, usedColors } = quantizeCanvas(cv, {
-    // Mirrors the built-in round-9 sizing: 128² cells with a tightened
-    // palette keep regions chunky (fill sweeps more per click) and the
-    // session readable start-to-finish.
-    colorTarget: 130,
-    minSize: 5,
-    minColors: 56,
-    maxColors: 150,
+    // Mirrors the built-in retune: 128² cells, every color owning a >=12-cell
+    // region, and a light noise pass. Chunky regions keep fills fast and the
+    // board reads as clean flat colour blocks instead of dither speckle.
+    colorTarget: 140,
+    minSize: 12,
+    minColors: 24,
+    maxColors: 128,
   });
   const hexPalette = [derivePaper(palette), ...palette.map(rgbToHex)];
   return {

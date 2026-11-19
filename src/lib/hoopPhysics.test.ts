@@ -1,73 +1,47 @@
 import { describe, expect, it } from 'vitest';
-import {
-  CARRY_POWER_MAX,
-  CARRY_POWER_MIN,
-  estimateLaunch,
-} from './hoopPhysics';
+import { AIM_MAX_DRAG, AIM_MIN_DRAG, AIM_POWER_MAX, AIM_POWER_MIN, aimFromDrag } from './hoopPhysics';
 
-describe('estimateLaunch (hoop aim mechanic, round 10)', () => {
-  it('throws with the flick velocity when the release is fast', () => {
-    const samples = [
-      { t: 900, x: 100, y: 400 },
-      { t: 950, x: 400, y: 300 },
-      { t: 1000, x: 700, y: 200 },
-    ];
-    const est = estimateLaunch(samples, { x: 100, y: 400 }, { x: 700, y: 200 }, 1000);
-    expect(est.launch).toBe(true);
-    // Capped at LAUNCH_CAP, clearly a real throw.
-    const speed = Math.hypot(est.vx, est.vy);
-    expect(speed).toBeGreaterThan(1000);
-    expect(est.vx).toBeGreaterThan(0); // recent motion was to the right
-    expect(est.vy).toBeLessThan(0); // and upward
+describe('aimFromDrag (hoop aim mechanic)', () => {
+  it('throws along the drag with power in the configured range', () => {
+    const aim = aimFromDrag({ x: 100, y: 400 }, { x: 250, y: 250 });
+    expect(aim.launch).toBe(true);
+    expect(aim.vx).toBeGreaterThan(0); // dragged up-right
+    expect(aim.vy).toBeLessThan(0);
+    expect(aim.power).toBeGreaterThanOrEqual(AIM_POWER_MIN);
+    expect(aim.power).toBeLessThanOrEqual(AIM_POWER_MAX);
+    expect(Math.hypot(aim.vx, aim.vy)).toBeCloseTo(aim.power, 6);
   });
 
-  it('falls back to a gentle toss along the drag when the flick is slow', () => {
-    // All samples are far older than the velocity window → no flick velocity;
-    // the overall drag (up-right, 150 px) still counts as a toss.
-    const samples = [
-      { t: 500, x: 100, y: 400 },
-      { t: 520, x: 102, y: 396 },
-      { t: 540, x: 104, y: 392 },
-    ];
-    const est = estimateLaunch(samples, { x: 100, y: 400 }, { x: 220, y: 310 }, 1000);
-    expect(est.launch).toBe(true);
-    const speed = Math.hypot(est.vx, est.vy);
-    expect(speed).toBeGreaterThanOrEqual(CARRY_POWER_MIN);
-    expect(speed).toBeLessThanOrEqual(CARRY_POWER_MAX);
-    expect(est.vx).toBeGreaterThan(0);
-    expect(est.vy).toBeLessThan(0);
+  it('does not launch for a short drag (a plain tap)', () => {
+    const aim = aimFromDrag({ x: 100, y: 400 }, { x: 100 + AIM_MIN_DRAG - 1, y: 400 });
+    expect(aim.launch).toBe(false);
+    expect(aim.vx).toBe(0);
+    expect(aim.vy).toBe(0);
+    expect(aim.power).toBe(0);
   });
 
-  it('scales the toss power with the carried distance', () => {
-    const short = estimateLaunch([], { x: 0, y: 0 }, { x: 60, y: 0 }, 1000);
-    const long = estimateLaunch([], { x: 0, y: 0 }, { x: 400, y: 0 }, 1000);
-    expect(Math.hypot(short.vx, short.vy)).toBeLessThan(Math.hypot(long.vx, long.vy));
-    expect(Math.hypot(long.vx, long.vy)).toBeLessThanOrEqual(CARRY_POWER_MAX + 1e-6);
+  it('scales power with drag distance and caps it at the maximum', () => {
+    const short = aimFromDrag({ x: 0, y: 0 }, { x: 0, y: -60 });
+    const long = aimFromDrag({ x: 0, y: 0 }, { x: 0, y: -200 });
+    const over = aimFromDrag({ x: 0, y: 0 }, { x: 0, y: -900 });
+    expect(short.power).toBeLessThan(long.power);
+    expect(over.power).toBeCloseTo(AIM_POWER_MAX, 6);
+    // The guide endpoint never runs past the maximum aim length.
+    expect(over.aimY).toBeCloseTo(-AIM_MAX_DRAG, 6);
   });
 
-  it('does not launch for a plain click without a drag', () => {
-    const est = estimateLaunch(
-      [{ t: 1000, x: 100, y: 400 }],
-      { x: 100, y: 400 },
-      { x: 102, y: 401 },
-      1000,
-    );
-    expect(est.launch).toBe(false);
-    expect(est.vx).toBe(0);
-    expect(est.vy).toBe(0);
+  it('is deterministic: holding still does not change the shot', () => {
+    // No timestamps involved — the same drag always produces the same throw,
+    // which is what makes careful aiming possible.
+    const a = aimFromDrag({ x: 120, y: 420 }, { x: 320, y: 220 });
+    const b = aimFromDrag({ x: 120, y: 420 }, { x: 320, y: 220 });
+    expect(a).toEqual(b);
   });
 
-  it('ignores stale samples when the pointer rests before release', () => {
-    // Fast motion, then a long pause, then release → placement, not a throw.
-    const samples = [
-      { t: 100, x: 100, y: 400 },
-      { t: 150, x: 500, y: 100 }, // was a fast flick…
-      { t: 900, x: 501, y: 101 }, // …but the pointer sat still for 750 ms
-    ];
-    const est = estimateLaunch(samples, { x: 100, y: 400 }, { x: 501, y: 101 }, 900);
-    // The drag carried the file ~400 px, so it still tosses along that path.
-    expect(est.launch).toBe(true);
-    expect(Math.hypot(est.vx, est.vy)).toBeLessThanOrEqual(CARRY_POWER_MAX + 1e-6);
-    expect(est.vx).toBeGreaterThan(0);
+  it('keeps the aim endpoint on the drag direction', () => {
+    const aim = aimFromDrag({ x: 100, y: 400 }, { x: 300, y: 400 });
+    expect(aim.aimY).toBeCloseTo(400, 6);
+    expect(aim.aimX).toBeCloseTo(300, 6);
+    expect(aim.vy).toBeCloseTo(0, 6);
   });
 });

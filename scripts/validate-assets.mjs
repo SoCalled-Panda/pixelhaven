@@ -102,12 +102,13 @@ for (const entry of catalog.artworks ?? []) {
       if (valid && covered === m.width) colorable += covered;
       else fail(`[${id}] rle row ${y} does not decode to exactly ${m.width} cells`);
     });
-    // HD tier quality bar (round 9): 80-160 paintable colors at 128² — a
-    // 4× lighter session than the round-6 256² boards, still painterly
-    // thanks to the smooth-upscaled display.
+    // HD tier quality bar (round 11 retune): 24-128 paintable colors at 128²,
+    // each color owning a region of at least 12 cells. The count is a band
+    // (not a fixed number) because scenes differ in complexity; the real
+    // quality bar is clean, fillable regions rather than 1-cell dither.
     if (entry.tier === 'hd') {
-      check(m.palette.length >= 81 && m.palette.length <= 161,
-        `[${id}] HD tier requires 80..160 paintable colors (found ${m.palette.length - 1})`);
+      check(m.palette.length >= 25 && m.palette.length <= 129,
+        `[${id}] HD tier requires 24..128 paintable colors (found ${m.palette.length - 1})`);
       check(m.width === 128 && m.height === 128, `[${id}] HD tier boards must be 128×128`);
     }
   } else {

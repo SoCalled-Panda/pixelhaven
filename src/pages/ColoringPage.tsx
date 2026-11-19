@@ -45,6 +45,25 @@ const INCOMPATIBLE_REASON_TEXT: Record<string, string> = {
   schema: 'the saved data uses an unsupported format',
 };
 
+/**
+ * Zoom tuning. Wheel/trackpad zoom is proportional to the scroll distance
+ * (exponential, so it composes smoothly across many small trackpad events)
+ * and capped per event; the +/- buttons and keys use one calm step. The old
+ * fixed 1.15x per wheel event raced on trackpads and left no fine control.
+ */
+const ZOOM_STEP = 1.15;
+const WHEEL_ZOOM_SENSITIVITY = 0.0011;
+const MAX_WHEEL_ZOOM_STEP = 1.18;
+
+/** Wheel delta → zoom factor, normalized across deltaMode (pixels/lines/pages). */
+function wheelZoomFactor(event: WheelEvent): number {
+  let delta = event.deltaY;
+  if (event.deltaMode === 1) delta *= 16; // lines
+  else if (event.deltaMode === 2) delta *= 400; // pages
+  const factor = Math.exp(-delta * WHEEL_ZOOM_SENSITIVITY);
+  return Math.min(MAX_WHEEL_ZOOM_STEP, Math.max(1 / MAX_WHEEL_ZOOM_STEP, factor));
+}
+
 export function ColoringPage() {
   const { artworkId } = useParams<{ artworkId: string }>();
   const navigate = useNavigate();
@@ -198,7 +217,7 @@ function Studio({
       rendererRef.current?.zoomAtPoint(
         event.clientX,
         event.clientY,
-        event.deltaY < 0 ? 1.15 : 1 / 1.15,
+        wheelZoomFactor(event),
       );
     };
     const onGesture = (event: Event) => event.preventDefault();
@@ -444,12 +463,12 @@ function Studio({
         break;
       case '+':
       case '=':
-        zoomCenter(1.3);
+        zoomCenter(ZOOM_STEP);
         event.preventDefault();
         break;
       case '-':
       case '_':
-        zoomCenter(1 / 1.3);
+        zoomCenter(1 / ZOOM_STEP);
         event.preventDefault();
         break;
       case '0':
@@ -575,8 +594,8 @@ function Studio({
               pressed={panMode}
               onClick={() => setPanMode((value) => !value)}
             />
-            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(1.3)} />
-            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / 1.3)} />
+            <IconButton icon={<IconPlus />} label="Zoom in" onClick={() => zoomCenter(ZOOM_STEP)} />
+            <IconButton icon={<IconMinus />} label="Zoom out" onClick={() => zoomCenter(1 / ZOOM_STEP)} />
             <IconButton
               icon={<IconFit />}
               label="Fit whole picture"

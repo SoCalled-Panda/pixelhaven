@@ -403,3 +403,37 @@ while keeping the original per-cell coloring."*
   `PHOTO_BOARD_SIZE²` (128²); regression tests pin the block-average math
   and the size contract. `hashCanvas` keeps hashing the full raster for
   stable seeds.)*
+
+## U. Review feedback round 11 — crisp display, clean regions, controllable zoom, planted aim
+
+- [x] **Crisp canvas at every zoom (supersedes round 9's smooth display).**
+  *(The "blurry" fit view was bilinear smoothing in `CanvasRenderer`, not a
+  resolution problem — anti-aliasing would have made it worse by bleeding
+  cell colours together. `SMOOTH_SCALE_MAX` is gone and the board cache is
+  always drawn with nearest-neighbor, so cells keep hard pixel-art edges at
+  fit and while zoomed. Vector overlays are unaffected.)*
+- [x] **Clean, fillable artwork regions.** *(Shrinking to 128² left 100+
+  colours that only existed as 1–2 cell specks: half of every board's regions
+  were under 8 cells, which read as dithery mush and made fill sessions
+  endless. `mergeSmallRegions` was a single stale-label pass and could not
+  guarantee a minimum region. It now relabels every pass, folds whole regions
+  smallest-first and repeats until every region clears the minimum — each
+  step removes a region, so it converges. Generator + photo import: every
+  colour owns ≥12 cells, light noise 8, median-cut target 140, palette band
+  24..128. Shipped set: 32–113 colours (avg ~68), median region 26–55 cells,
+  93–264 regions per board, down from 519–1078. contentVersion 8→9.)*
+- [x] **Controllable zoom.** *(Wheel/trackpad zoom is exponential and
+  proportional to scroll distance, capped per event; one mouse notch is
+  ~1.12× instead of the old fixed 1.15–1.3× racing. Buttons and +/- keys use
+  a calm 1.15× step. Verified with Puppeteer: 100 px wheel = 1.116×, ten 4 px
+  trackpad deltas = 1.045×.)*
+- [x] **Hoop aiming that works toward the rim.** *(The old flick-velocity
+  model changed whenever the pointer paused, and the guide was drawn behind
+  the backboard. Aiming is now a planted deterministic drag: the file stays
+  on the floor, pointer direction = throw direction, drag distance = power,
+  and the guide (drawn above the court) is the exact release arc. Removed the
+  invisible backboard underside collider that blocked clean arcs at the rim.
+  Verified end-to-end: drag (+30, −170) scores "Nothing but net!".)*
+- [x] **Tests & validation.** *(139/139 green including new merge-convergence
+  and aim tests; typecheck, eslint, build and validate:assets all pass. HD
+  validator band is now 24..128 colours at 128×128.)*

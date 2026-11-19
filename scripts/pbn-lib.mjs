@@ -350,43 +350,82 @@ function labelRegions(grid, w, h) {
   return { labels, sizes };
 }
 
-/** Merge regions smaller than minSize into their dominant neighbor region. */
+/**
+ * Merge regions smaller than minSize into their dominant neighbour region.
+ *
+ * Whole regions are reassigned (not individual cells) and processed smallest
+ * first, so a spec is folded into a real neighbour and the merged result can
+ * absorb larger stragglers on the next pass. Every reassignment removes at
+ * least one region, so repeated passes always converge — the previous version
+ * used one stale label snapshot, which could leave sub-minSize regions behind
+ * and was the source of the speckled 1-cell dithering in the HD set.
+ *
+ * Returns the number of cells reassigned.
+ */
 export function mergeSmallRegions(grid, w, h, minSize) {
-  const { labels, sizes } = labelRegions(grid, w, h);
-  // Value per region label (labels are static while we only rewrite grid).
-  const labelValue = new Int32Array(sizes.length);
-  for (let cell = 0; cell < w * h; cell++) labelValue[labels[cell]] = grid[cell];
-
+  if (minSize <= 1) return 0;
   let merged = 0;
-  for (let cell = 0; cell < w * h; cell++) {
-    const label = labels[cell];
-    if (sizes[label] >= minSize) continue;
-    const x = cell % w;
-    const y = (cell - x) / w;
-    const counts = new Map();
-    const see = (n) => {
-      if (n < 0 || n >= w * h || labels[n] === label) return;
-      counts.set(labels[n], (counts.get(labels[n]) ?? 0) + 1);
-    };
-    see(y > 0 ? cell - w : -1);
-    see(y < h - 1 ? cell + w : -1);
-    see(x > 0 ? cell - 1 : -1);
-    see(x < w - 1 ? cell + 1 : -1);
-    let best = -1;
-    let bestCount = 0;
-    for (const [labelId, count] of counts) {
-      if (
-        count > bestCount ||
-        (count === bestCount && best >= 0 && labelValue[labelId] === labelValue[best] && sizes[labelId] > sizes[best])
-      ) {
-        best = labelId;
-        bestCount = count;
+  for (let pass = 0; pass < 64; pass++) {
+    const { labels, sizes } = labelRegions(grid, w, h);
+    const small = [];
+    for (let id = 0; id < sizes.length; id++) if (sizes[id] < minSize) small.push(id);
+    if (small.length === 0) break;
+
+    // Cells per small region, built in one scan per pass.
+    const cellsOf = new Map();
+    for (const id of small) cellsOf.set(id, []);
+    for (let cell = 0; cell < w * h; cell++) {
+      const list = cellsOf.get(labels[cell]);
+      if (list) list.push(cell);
+    }
+
+    // Live cell count per grid value, for tie-breaking toward big fields.
+    const valueSize = new Map();
+    for (let cell = 0; cell < w * h; cell++) {
+      const v = grid[cell];
+      valueSize.set(v, (valueSize.get(v) ?? 0) + 1);
+    }
+
+    small.sort((a, b) => sizes[a] - sizes[b]);
+    let changed = 0;
+    for (const id of small) {
+      const cells = cellsOf.get(id);
+      if (!cells || cells.length === 0) continue;
+      const value = grid[cells[0]];
+      const counts = new Map();
+      for (const cell of cells) {
+        const x = cell % w;
+        const y = (cell - x) / w;
+        const see = (n) => {
+          if (n < 0 || n >= w * h) return;
+          const other = grid[n];
+          if (other === value) return;
+          counts.set(other, (counts.get(other) ?? 0) + 1);
+        };
+        see(y > 0 ? cell - w : -1);
+        see(y < h - 1 ? cell + w : -1);
+        see(x > 0 ? cell - 1 : -1);
+        see(x < w - 1 ? cell + 1 : -1);
       }
+      let best = -1;
+      let bestCount = 0;
+      for (const [other, count] of counts) {
+        if (
+          count > bestCount ||
+          (count === bestCount && (valueSize.get(other) ?? 0) > (valueSize.get(best) ?? 0))
+        ) {
+          best = other;
+          bestCount = count;
+        }
+      }
+      if (best < 0) continue; // board holds only this region
+      for (const cell of cells) grid[cell] = best;
+      valueSize.set(best, (valueSize.get(best) ?? 0) + cells.length);
+      valueSize.set(value, Math.max(0, (valueSize.get(value) ?? 0) - cells.length));
+      merged += cells.length;
+      changed++;
     }
-    if (best >= 0) {
-      grid[cell] = labelValue[best];
-      merged++;
-    }
+    if (changed === 0) break;
   }
   return merged;
 }

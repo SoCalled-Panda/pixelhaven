@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { estimateLaunch } from '../lib/hoopPhysics';
+import { aimFromDrag } from '../lib/hoopPhysics';
 
 /**
  * HoopUpload mini-game (round 9, file edition round 10) — the upload screen
  * from the mood board: "Drop files here, or take the shot." The picked photo
  * is mounted on a white file card — the "board" from the reference design,
- * with the picture at the top on a white background — and the player flicks
+ * with the picture at the top on a white background - and the player throws
  * that file through the hoop to start the conversion. Misses reset the file
  * so the player can shoot again; the Continue button skips the game entirely.
  *
@@ -14,11 +14,11 @@ import { estimateLaunch } from '../lib/hoopPhysics';
  * gentle magnet near the rim so shots feel fair on touch screens, net
  * swish + confetti on a goal.
  *
- * Aiming (round 10 fix): dragging samples recent pointer motion and draws a
- * live dotted trajectory guide; releasing always shoots with the exact
- * velocity the guide displayed — a fast flick throws hard, a slow carried
- * drag tosses along the drag direction, and only a plain click sets the file
- * down without throwing it.
+ * Aiming: the file stays planted and the player drags an aim vector from it
+ * (drag toward the hoop = throw toward the hoop; distance = power). The
+ * dotted guide is drawn on top of the court from the same deterministic
+ * estimator the release uses, so what the player sees is exactly what flies.
+ * A plain click sets the file down without throwing it.
  *
  * The canvas is aria-hidden; the accessible paths are the Continue button
  * and the keyboard controls (arrows to move, Space to shoot).
@@ -42,7 +42,7 @@ const CONFETTI = ['#e8875f', '#f6c945', '#7fb069', '#43364a', '#b04f2c'];
 const MISS_LINES = [
   'Rimmed out — one more shot?',
   'So close! Try a slightly higher arc.',
-  'Off target — a softer flick might do it.',
+  'Off target - a gentler drag might do it.',
   'Missed! The file is back — shoot again.',
   'Not this time — watch the dotted aim guide.',
 ];
@@ -169,17 +169,18 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ballImgRef = useRef<HTMLImageElement | null>(null);
   const [hasPhoto, setHasPhoto] = useState(false);
-  const [status, setStatus] = useState('Grab the file, drag it, and flick it at the hoop.');
+  const [status, setStatus] = useState('Drag up from the file toward the hoop, then release to shoot.');
 
   // Mutable game state lives in refs — the render loop reads them every frame.
   const layoutRef = useRef<Layout | null>(null);
   const ballRef = useRef<Ball>({ x: 80, y: 300, vx: 0, vy: 0, r: 20, angle: 0, state: 'rest', restTimer: 0 });
   const dragRef = useRef<{
-    startX: number;
-    startY: number;
+    /** Ball position when the aim started — the guide and shot start here. */
+    anchorX: number;
+    anchorY: number;
+    /** Current pointer position (canvas coordinates), clamped by the aim math. */
     lastX: number;
     lastY: number;
-    samples: { t: number; x: number; y: number }[];
   } | null>(null);
   const trailRef = useRef<TrailDot[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -356,14 +357,10 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
           ball.vy = Math.abs(ball.vy) * 0.5;
         }
 
-        // Backboard: bounce off its underside and side edges.
-        const bb = layout;
-        const nearBoardX = ball.x + ball.r > bb.boardX && ball.x - ball.r < bb.boardX + bb.boardW;
-        if (ball.vy < 0 && nearBoardX && prevY + ball.r <= bb.boardY + bb.boardH && ball.y + ball.r > bb.boardY + bb.boardH) {
-          ball.y = bb.boardY + bb.boardH - ball.r;
-          ball.vy = Math.abs(ball.vy) * 0.45;
-          sounds.board();
-        }
+        // The backboard is the card BEHIND the hoop (front view), so an arc
+        // in front of it must not bounce off an invisible underside right at
+        // the rim — that collider made clean shots near-impossible. Only the
+        // floor, walls, ceiling and rim ends are solid.
 
         // Rim ends: circle colliders.
         for (const rimX of [layout.rimX0, layout.rimX1]) {
@@ -485,7 +482,7 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
   /* ------------------------------------------------------------ pointers */
 
   // Shared drag logic used by both the canvas handlers and window-level
-  // fallback listeners, so a drag that leaves the court still launches.
+  // fallback listeners, so a drag that leaves the court still aims.
   const winMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
   const winUpRef = useRef<((e: PointerEvent) => void) | null>(null);
 
@@ -498,48 +495,39 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
 
   useEffect(() => detachWindowListeners, [detachWindowListeners]);
 
-  const handleMove = useCallback((clientX: number, clientY: number, timeStamp: number) => {
+  const handleMove = useCallback((clientX: number, clientY: number) => {
     const drag = dragRef.current;
-    const layout = layoutRef.current;
     const canvas = canvasRef.current;
-    if (!drag || !layout || !canvas) return;
+    if (!drag || !canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    const ball = ballRef.current;
-    ball.x = Math.min(Math.max(ball.r, x), layout.w - ball.r);
-    ball.y = Math.min(Math.max(ball.r, y), layout.floorY - ball.r);
-    drag.lastX = x;
-    drag.lastY = y;
-    drag.samples.push({ t: timeStamp, x, y });
-    while (drag.samples.length > 8) drag.samples.shift();
+    // The card stays put; the pointer only defines the throw vector.
+    drag.lastX = clientX - rect.left;
+    drag.lastY = clientY - rect.top;
   }, []);
 
   const handleUp = useCallback(
-    (_: number, __: number, timeStamp: number) => {
+    (clientX: number, clientY: number) => {
       detachWindowListeners();
       const drag = dragRef.current;
       dragRef.current = null;
       const layout = layoutRef.current;
-      if (!drag || !layout) return;
+      const canvas = canvasRef.current;
+      if (!drag || !layout || !canvas) return;
       const ball = ballRef.current;
       if (ball.state !== 'drag') return;
-      // drag.samples already ends with { x: drag.lastX, y: drag.lastY } from the
-      // last pointermove — use that as the end point so the aim guide and the
-      // actual launch always match exactly.
-      const estimate = estimateLaunch(
-        drag.samples,
-        { x: drag.startX, y: drag.startY },
-        { x: drag.lastX, y: drag.lastY },
-        timeStamp,
+      const rect = canvas.getBoundingClientRect();
+      // Same estimator as the dotted guide → release matches the preview.
+      const aim = aimFromDrag(
+        { x: drag.anchorX, y: drag.anchorY },
+        { x: clientX - rect.left, y: clientY - rect.top },
       );
-      if (!estimate.launch) {
+      if (!aim.launch) {
         ball.state = 'rest';
-        setStatus('File placed — flick it toward the hoop to shoot.');
+        setStatus('Drag from the file toward the hoop to aim.');
         return;
       }
-      ball.vx = estimate.vx;
-      ball.vy = estimate.vy;
+      ball.vx = aim.vx;
+      ball.vy = aim.vy;
       ball.state = 'fly';
       ball.restTimer = 0;
       soundsRef.current?.shoot();
@@ -574,22 +562,24 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const ball = ballRef.current;
-    if (ball.state === 'rest' && ballAt(event.clientX, event.clientY)) {
+    // Grab the card itself, or start aiming anywhere below the rim — a
+    // forgiving target (the card is deliberately small on touch screens).
+    const belowRim = y > layout.rimY + ball.r * 2;
+    if (ball.state === 'rest' && (ballAt(event.clientX, event.clientY) || belowRim)) {
       ball.state = 'drag';
       ball.vx = 0;
       ball.vy = 0;
       dragRef.current = {
-        startX: x,
-        startY: y,
+        anchorX: ball.x,
+        anchorY: ball.y,
         lastX: x,
         lastY: y,
-        samples: [{ t: event.timeStamp, x, y }],
       };
       setStatus('Aim with the dotted guide — release to shoot.');
       // Window-level fallbacks: drags that leave the court still count.
       detachWindowListeners();
-      const winMove = (e: PointerEvent) => handleMove(e.clientX, e.clientY, e.timeStamp);
-      const winUp = (e: PointerEvent) => handleUp(e.clientX, e.clientY, e.timeStamp);
+      const winMove = (e: PointerEvent) => handleMove(e.clientX, e.clientY);
+      const winUp = (e: PointerEvent) => handleUp(e.clientX, e.clientY);
       winMoveRef.current = winMove;
       winUpRef.current = winUp;
       window.addEventListener('pointermove', winMove);
@@ -600,11 +590,11 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    handleMove(event.clientX, event.clientY, event.timeStamp);
+    handleMove(event.clientX, event.clientY);
   };
 
   const endDrag = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    handleUp(event.clientX, event.clientY, event.timeStamp);
+    handleUp(event.clientX, event.clientY);
   };
 
   /* ------------------------------------------------------------ keyboard */
@@ -707,11 +697,10 @@ export function HoopGame({ ballSrc, fileName, importsCount, onScore, onContinue,
 /* -------------------------------------------------------------- painter */
 
 type DragState = {
-  startX: number;
-  startY: number;
+  anchorX: number;
+  anchorY: number;
   lastX: number;
   lastY: number;
-  samples: { t: number; x: number; y: number }[];
 };
 
 function draw(
@@ -750,45 +739,6 @@ function draw(
     ctx.beginPath();
     ctx.arc(dot.x, dot.y, ball.r * 0.36, 0, Math.PI * 2);
     ctx.fill();
-  }
-
-  // Aim guide: dotted trajectory while dragging — the exact arc the release
-  // will produce (same estimator as handleUp), so slow careful drags aim too.
-  if (drag && ball.state === 'drag') {
-    const estimate = estimateLaunch(
-      drag.samples,
-      { x: drag.startX, y: drag.startY },
-      { x: drag.lastX, y: drag.lastY },
-      now,
-    );
-    if (estimate.launch) {
-      const dot = { x: ball.x, y: ball.y };
-      const vel = { vx: estimate.vx, vy: estimate.vy };
-      const stepSize = 1 / 60;
-      for (let i = 1; i <= 44; i++) {
-        vel.vy += GRAVITY * stepSize;
-        dot.x += vel.vx * stepSize;
-        dot.y += vel.vy * stepSize;
-        if (dot.y > floorY - 4) break;
-        if (i % 3 === 0) {
-          const t = i / 44;
-          ctx.fillStyle = `rgba(176, 79, 44, ${0.55 * (1 - t) + 0.12})`;
-          ctx.beginPath();
-          ctx.arc(dot.x, dot.y, 3.4 - 1.6 * t, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      // Short direction stub off the card so the throw reads instantly.
-      const speed = Math.hypot(estimate.vx, estimate.vy);
-      const ux = estimate.vx / speed;
-      const uy = estimate.vy / speed;
-      ctx.strokeStyle = 'rgba(176, 79, 44, 0.75)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(ball.x + ux * (ball.r + 5), ball.y + uy * (ball.r + 5));
-      ctx.lineTo(ball.x + ux * (ball.r + 17), ball.y + uy * (ball.r + 17));
-      ctx.stroke();
-    }
   }
 
   // Backboard panel (the dashed "Drop files here" card).
@@ -864,6 +814,50 @@ function draw(
   // Mount plate to the board.
   ctx.fillStyle = RIM_DARK;
   ctx.fillRect(rimCx - 12, rimY - 10, 24, 8);
+
+  // Aim guide (drawn ON TOP of board/rim so the arc is never hidden): the
+  // pointer defines direction + power, and the dotted arc is the exact path
+  // the release will take. The rubber-band line makes the gesture obvious.
+  if (drag && ball.state === 'drag') {
+    const aim = aimFromDrag(
+      { x: ball.x, y: ball.y },
+      { x: drag.lastX, y: drag.lastY },
+    );
+    ctx.save();
+    ctx.strokeStyle = 'rgba(176, 79, 44, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(ball.x, ball.y);
+    ctx.lineTo(aim.aimX, aim.aimY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(176, 79, 44, 0.75)';
+    ctx.beginPath();
+    ctx.arc(aim.aimX, aim.aimY, 4 + (aim.power / 1700) * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (aim.launch) {
+      const dot = { x: ball.x, y: ball.y };
+      const vel = { vx: aim.vx, vy: aim.vy };
+      const stepSize = 1 / 60;
+      const steps = 110; // ~1.8 s — enough to see the full arc land
+      for (let i = 1; i <= steps; i++) {
+        vel.vy += GRAVITY * stepSize;
+        dot.x += vel.vx * stepSize;
+        dot.y += vel.vy * stepSize;
+        if (dot.y > floorY - 4) break;
+        if (i % 4 === 0) {
+          const t = i / steps;
+          ctx.fillStyle = `rgba(176, 79, 44, ${0.6 * (1 - t) + 0.15})`;
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, 3.4 - 1.4 * t, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.restore();
+  }
 
   // Ball shadow.
   const shadowScale = Math.max(0.35, 1 - (floorY - ball.y) / 320);

@@ -303,34 +303,48 @@ the store before touching the static catalog. Save files for custom boards
 remain portable as snapshots; the manifest itself lives in the browser that
 made it.
 
-## 14. Round 9 — lighter boards + smooth display
+## 14. Rounds 9–11 — lighter boards, crisp display, clean regions
 
 Review feedback was that the 256² boards (65,536 cells) made a session drag
 from start to finish, and the pick step of the import deserved some play.
-Three changes shipped together:
 
 1. **Boards shrink to 128² (16,384 cells — a 4× lighter session).** The HD
-   painters still rasterize at their native 512²; the generator now
-   box-downsamples 4× and quantizes against a tightened palette (target 140,
-   min 5-cell regions, 80..160 colors — 102..139 in the shipped set). The
-   photo pipeline mirrors this (`PHOTO_BOARD_SIZE = 128`, quantize target
-   130, ≤150 colors). `contentVersion` bumps 7→8, so old 256² saves exit
-   through the existing content-version guard instead of mis-restoring.
-2. **Smooth display ("DLSS-style" upscale).** With fewer cells the overview
-   must not look like a coarse pixel grid, so `CanvasRenderer` now renders
-   zoom-adaptively: whenever the on-screen cell scale is below the 8 px/cell
-   offscreen-cache resolution (`SMOOTH_SCALE_MAX`), the board is drawn with
-   high-quality bilinear smoothing — the same idea as frame upscalers, fewer
-   source cells, a soft painterly result. Zooming in past the threshold
-   (cells big enough to paint precisely) flips back to crisp
-   nearest-neighbor. Overlays are unaffected either way.
-3. **The upload court.** `HoopGame.tsx` turns the picked file into a ball on
+   painters still rasterize at their native 512²; the generator
+   box-downsamples 4×. `contentVersion` bumped 7→8 for that change, so old
+   256² saves exit through the existing content-version guard instead of
+   mis-restoring.
+2. **Crisp display (no smoothing).** The board is a grid of flat paint
+   cells, so `CanvasRenderer` always draws the 8 px/cell offscreen cache with
+   nearest-neighbor — bilinear smoothing is what made the fit view read as
+   "blurry". Cells keep hard pixel-art edges at every zoom; overlays are
+   vector-crisp on top. (Anti-aliasing is deliberately *not* used here: it
+   bleeds colours across cell boundaries.)
+3. **Round 11: clean, fillable regions.** Shrinking the board exposed a data
+   problem rather than a display one: the 128² palette still carried 100+
+   colours that only existed as 1–2 cell specks. `mergeSmallRegions` did a
+   single stale-label pass, so it could never guarantee a minimum region
+   size, and the dither read as "mushy" while making fill sessions endless.
+   The merge now relabels after every pass, folds whole regions
+   smallest-first, and repeats until every region clears the minimum — each
+   step removes a region, so it always converges. Generator and import
+   settings: every colour must own ≥12 cells, light noise (8), median-cut
+   target 140, palette band 24..128. The shipped set is 32–113 colours
+   (avg ~68) with a median region of 26–55 cells and 93–264 regions per
+   board (was 519–1078 regions, half of them under 8 cells).
+   `contentVersion` bumps 8→9 so pre-retune saves exit cleanly.
+4. **Controllable zoom.** Wheel/trackpad zoom is now exponential and
+   proportional to the scroll distance, capped per event, so one mouse notch
+   is ~1.12× and a trackpad flick no longer races across the whole zoom
+   range. The +/- buttons and keyboard use a calm 1.15× step.
+5. **The upload court.** `HoopGame.tsx` turns the picked file into a ball on
    a basketball court (dashed "Drop files here" backboard, orange rim,
    animated net). Physics live in one rAF loop over refs — gravity,
-   restitution bounces off floor/walls/ceiling/backboard, circle colliders
-   on both rim ends, launch velocity from the last ~120 ms of pointer
-   motion, and a mild magnet that steers near-straight drops into the rim so
-   touch shots feel fair. A goal plays a net-swish + confetti and starts the
-   conversion; a miss resets the ball for another shot; "Continue" skips the
-   game; arrow keys + Space give the game a keyboard path. Files dropped
-   onto the court replace the ball mid-game.
+   restitution bounces off floor/walls/ceiling, circle colliders on both rim
+   ends, and a mild magnet that steers near-straight drops into the rim so
+   touch shots feel fair. Aiming is a planted, deterministic drag: the file
+   stays on the floor, the direction to the pointer is the throw direction,
+   drag distance sets power, and the dotted guide (drawn above the court)
+   shows exactly the arc the release will produce. A goal plays a net-swish +
+   confetti and starts the conversion; a miss resets the ball for another
+   shot; "Continue" skips the game; arrow keys + Space give the game a
+   keyboard path. Files dropped onto the court replace the ball mid-game.

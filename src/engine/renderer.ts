@@ -13,14 +13,6 @@ import {
 
 /** Offscreen cache resolution per cell — the board is painted once at this size. */
 export const BASE_CELL_PX = 8;
-/**
- * Smooth-display threshold (round 9 "DLSS-style" upscale): below this
- * on-screen scale the BASE_CELL_PX cache is being downscaled, so bilinear
- * smoothing turns the overview into a soft painterly picture instead of an
- * aliased pixel grid. At or above it the cache maps 1:1 or upscaled —
- * smoothing switches off so zoomed-in coloring keeps crisp cell edges.
- */
-export const SMOOTH_SCALE_MAX = BASE_CELL_PX;
 /** Zoom-out floor: never smaller than the fit scale (whole board visible). */
 export const MAX_ZOOM_PX = 64;
 /** Grid lines only make sense when cells are big enough to read them. */
@@ -42,8 +34,9 @@ export interface CanvasRendererOptions {
  *    so panning and zooming are a single `drawImage` (60 fps on big grids);
  *  - cell edits partially repaint the offscreen cache, then coalesce a
  *    main-canvas frame via requestAnimationFrame;
- *  - device-pixel-ratio aware; zoom-adaptive smoothing (soft painterly
- *    overview, crisp pixel coloring — see SMOOTH_SCALE_MAX).
+ *  - device-pixel-ratio aware; always nearest-neighbor so cells keep hard,
+ *    pixel-art edges at every zoom (bilinear smoothing is what reads as
+ *    "blurry" on a paint-by-numbers board).
  */
 export class CanvasRenderer {
   private readonly canvas: HTMLCanvasElement;
@@ -278,12 +271,11 @@ export class CanvasRenderer {
       this.canvas.height = backingHeight;
     }
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Zoom-adaptive smoothing: downscaling the cache (overview) reads best
-    // softly upscaled; coloring zoom wants hard cell edges. The flag only
-    // affects the board drawImage — overlays stay vector-crisp either way.
-    const smooth = this.view.scale < SMOOTH_SCALE_MAX;
-    this.ctx.imageSmoothingEnabled = smooth;
-    if (smooth) this.ctx.imageSmoothingQuality = 'high';
+    // Always nearest-neighbor: the board is a grid of flat paint cells, so
+    // smoothing only bleeds colours across cell boundaries (the "blurry"
+    // overview). Hard edges read as crisp pixel art at fit and when zoomed.
+    // Overlays are drawn as vectors on top, so they stay crisp regardless.
+    this.ctx.imageSmoothingEnabled = false;
 
     // Paper backdrop (also covers panned-in empty margins).
     this.ctx.fillStyle = this.artwork.paperColor;
