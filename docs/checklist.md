@@ -474,3 +474,13 @@ while keeping the original per-cell coloring."*
   `maxColors` cases; typecheck, eslint, build and validate:assets pass. E2E
   through the real wizard renders the 256² board in the review side-by-side
   with crisp pixelated display.)*
+
+## W. Review feedback round 13 — faster, still controlled zoom
+
+- [x] **One notch was ~1.12×, which felt slow.** *(Raised the wheel
+  sensitivity so a standard 100 px notch is ~1.17× (was 1.116×), ten 4 px
+  trackpad deltas ~1.07× (was 1.045×), the per-event cap ~1.22× (was 1.18×),
+  and the +/- buttons and keyboard step 1.2× (was 1.15×). The curve itself is
+  untouched: zoom is still exponential in scroll distance, so small trackpad
+  movements stay fine and one big scroll cannot race across the whole range —
+  speed went up, control did not go down.)*

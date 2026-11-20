@@ -49,11 +49,13 @@ const INCOMPATIBLE_REASON_TEXT: Record<string, string> = {
  * Zoom tuning. Wheel/trackpad zoom is proportional to the scroll distance
  * (exponential, so it composes smoothly across many small trackpad events)
  * and capped per event; the +/- buttons and keys use one calm step. The old
- * fixed 1.15x per wheel event raced on trackpads and left no fine control.
+ * fixed 1.15x per wheel event raced on trackpads and left no fine control, so
+ * the wheel stays distance-based — one mouse notch is ~1.17x, ten 4 px
+ * trackpad deltas ~1.07x — while the buttons use a slightly firmer 1.2x step.
  */
-const ZOOM_STEP = 1.15;
-const WHEEL_ZOOM_SENSITIVITY = 0.0011;
-const MAX_WHEEL_ZOOM_STEP = 1.18;
+const ZOOM_STEP = 1.2;
+const WHEEL_ZOOM_SENSITIVITY = 0.0016;
+const MAX_WHEEL_ZOOM_STEP = 1.22;
 
 /** Wheel delta → zoom factor, normalized across deltaMode (pixels/lines/pages). */
 function wheelZoomFactor(event: WheelEvent): number {

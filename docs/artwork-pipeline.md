@@ -376,10 +376,12 @@ from start to finish, and the pick step of the import deserved some play.
    **Photos keep their own settings** (256² board, 48-box target, 12-cell
    floor): the 128² / 12-cell rule is right for the synthetic scenes and wrong
    for a face — see §14 for why and for the measurements.
-4. **Controllable zoom.** Wheel/trackpad zoom is now exponential and
-   proportional to the scroll distance, capped per event, so one mouse notch
-   is ~1.12× and a trackpad flick no longer races across the whole zoom
-   range. The +/- buttons and keyboard use a calm 1.15× step.
+4. **Controllable zoom.** Wheel/trackpad zoom is exponential and proportional
+   to the scroll distance, capped per event, so one mouse notch is ~1.17× and a
+   trackpad flick no longer races across the whole zoom range. The +/- buttons
+   and keyboard use a 1.2× step. (Round 13 nudged these up from 1.12× / 1.15×
+   after the user reported the zoom felt slow; the shape of the curve — small
+   trackpad deltas stay fine, big scrolls stay capped — is unchanged.)
 5. **The upload court.** `HoopGame.tsx` turns the picked file into a ball on
    a basketball court (dashed "Drop files here" backboard, orange rim,
    animated net). Physics live in one rAF loop over refs — gravity,
