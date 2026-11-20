@@ -115,6 +115,13 @@ describe('quantizeCanvas (photo pipeline core)', () => {
     const { usedColors } = quantizeCanvas(cv, { colorTarget: 24, minSize: 1, minColors: 4 });
     expect(usedColors).toBeLessThanOrEqual(24);
   });
+
+  it('honours maxColors when the retry ladder wants more colors', () => {
+    // An impossible minColors forces every retry; the ceiling must still win.
+    const cv = makeTestCanvas(64, 64);
+    const { usedColors } = quantizeCanvas(cv, { colorTarget: 8, minSize: 1, minColors: 10_000, maxColors: 12 });
+    expect(usedColors).toBeLessThanOrEqual(12);
+  });
 });
 
 describe('mergeSmallRegions / countRegions', () => {
@@ -158,6 +165,38 @@ describe('mergeSmallRegions / countRegions', () => {
     const before = Array.from(grid);
     expect(mergeSmallRegions(grid, 16, 16, 2)).toBe(0);
     expect(Array.from(grid)).toEqual(before);
+  });
+
+  it('keeps small high-contrast regions when a contrast guard is set', () => {
+    // Two lone cells under the floor: one is a near-tone of colour 1 (dither),
+    // the other is a dark line on light skin (structure). Only the dither may
+    // be absorbed — this is what stops a floor from eating eyes and line art.
+    const centers = [
+      [235, 215, 205], // 1: skin
+      [230, 210, 200], // 2: almost the same skin tone
+      [45, 40, 45], // 3: dark line
+    ];
+    const grid = new Int32Array(16 * 16).fill(1);
+    grid[4 * 16 + 4] = 2;
+    grid[10 * 16 + 10] = 3;
+
+    mergeSmallRegions(grid, 16, 16, 24, { centers, minContrast: 40 });
+
+    expect(grid[4 * 16 + 4]).toBe(1); // low contrast: merged away
+    expect(grid[10 * 16 + 10]).toBe(3); // high contrast: preserved
+    expect(countRegions(grid, 16, 16)).toBe(2);
+  });
+
+  it('still merges everything when the contrast guard is off', () => {
+    const centers = [
+      [235, 215, 205],
+      [230, 210, 200],
+      [45, 40, 45],
+    ];
+    const grid = new Int32Array(16 * 16).fill(1);
+    grid[10 * 16 + 10] = 3;
+    mergeSmallRegions(grid, 16, 16, 24, { centers, minContrast: 0 });
+    expect(countRegions(grid, 16, 16)).toBe(1);
   });
 });
 
@@ -298,8 +337,9 @@ describe('boxDownsample (supersample reducer)', () => {
   });
 
   it('keeps the conversion core at PHOTO_BOARD_SIZE² (round-9 regression)', () => {
-    // Regression: pre-round-9 the browser port quantized the raw 2× raster,
-    // silently shipping 512² imports. The core must see the reduced board.
+    // Regression: pre-round-9 the browser port quantized the raw supersampled
+    // raster, silently shipping boards 2× oversized. The core must see the
+    // box-downsampled board exactly.
     const raster = makeTestCanvas(PHOTO_BOARD_SIZE * PHOTO_SUPERSAMPLE, PHOTO_BOARD_SIZE * PHOTO_SUPERSAMPLE);
     const result = buildPhotoGrid(boxDownsample(raster, PHOTO_SUPERSAMPLE), 99);
     expect(result.size).toBe(PHOTO_BOARD_SIZE);
@@ -307,21 +347,24 @@ describe('boxDownsample (supersample reducer)', () => {
 });
 
 describe('constants', () => {
-  it('uses white board paper, a 2× supersample and the round-9 128² board', () => {
+  it('uses white board paper, a 2× supersample and the 256² photo board', () => {
     // Review round 10: imported boards always sit on white paper.
     expect(PHOTO_PAPER).toBe('#ffffff');
     expect(PHOTO_OUTLINE).toMatch(/^#[0-9a-f]{6}$/);
     expect(PHOTO_SUPERSAMPLE).toBe(2);
-    // Round 9: imports share the built-in set's 128² sizing — 4× fewer
-    // cells than the original 256² boards so sessions stay engaging.
-    expect(PHOTO_BOARD_SIZE).toBe(128);
+    // Round 12: photos get 256² while built-in scenes stay at 128². At 128² a
+    // portrait averages 2.3 source px per cell and the face turns to slabs;
+    // 256² is ~1:1 with the photo the user actually picked.
+    expect(PHOTO_BOARD_SIZE).toBe(256);
     expect(rgbToHex([255, 0, 16])).toBe('#ff0010');
   });
 
-  it('buildPhotoGrid keeps the photo-specific palette, not the scene band', () => {
+  it('buildPhotoGrid keeps the photo palette small (flat fillable regions)', () => {
     const result = buildPhotoGrid(makeTestCanvas(128, 128), 777);
     expect(result.size).toBe(128);
     expect(result.usedColors).toBeGreaterThanOrEqual(2);
-    expect(result.usedColors).toBeLessThanOrEqual(150);
+    // Photos target ~48 colours and never exceed the 64-colour ceiling; the
+    // large flat regions that creates are what keeps a 256² session short.
+    expect(result.usedColors).toBeLessThanOrEqual(64);
   });
 });

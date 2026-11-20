@@ -267,22 +267,51 @@ photo can become a paint-by-number board on the spot:
 
 1. **Rasterize** — the picked file is decoded EXIF-aware
    (`createImageBitmap … 'from-image'` with an `<img>` fallback), center-cropped
-   to a square (cover fit) and drawn at 2× supersample: 256² for the 128² board.
-2. **Texture** — a light value-noise pass (amount 8, the same as the scenes)
-   gives region borders a painterly wobble. The noise seed is a content hash of
-   the rasterized pixels, so the same photo always converts to the same board.
-3. **Quantize** — median cut to 130 boxes (retry ladder raises k when region
-   cleanup drops below 56 colors), nearest-center assignment, small-region
-   merge (min 5 cells), compaction, luminance-sorted palette → ≤150 colors.
-   **Photos keep their own settings and never inherit the scene retune.** A 128²
-   board from a 293 px portrait is only ~2.3 px per cell, so the scene rule
-   (every colour owns ≥12 cells) collapses eyes/nose/hair into flat slabs and
-   the board reads as a blurred blob; 5 cells is ~11 px at import size and keeps
-   the face legible. Measured on that portrait against the 128² source raster:
-   the 12-cell setting scores 104% of source high-pass detail at 0.865
-   luminance correlation (the reported blur), while 130 boxes / 5 cells / noise
-   8 scores 114% at 0.909 — the same fidelity the pre-retune import had, with
-   ~30% more regions than the retune, which is exactly the trade a face needs.
+   to a square (cover fit) and drawn at 2× supersample: 512² for the 256² board.
+   **Photos get a 256² board; built-in scenes stay at 128².** That is the
+   fidelity fix: a 293 px portrait on 128² averages 2.3 × 2.3 source pixels per
+   cell, which erases eyes, brows and line art *before* quantization, so no
+   palette setting can bring them back. At 256² the same photo is ~1.15 px/cell
+   — effectively 1:1 — and the face survives. 512² would only upsample the
+   source, so 256² is the ceiling that matters.
+2. **Texture** — a very light value-noise pass (amount 2) gives region borders
+   a painterly wobble. Amounts 4 and 8 both seeded visible streaks at this cell
+   size without adding real detail. The noise seed is a content hash of the
+   rasterized pixels, so the same photo always converts to the same board.
+3. **Quantize** — median cut to 48 boxes (retry ladder may raise k but never
+   past a 64-colour ceiling), nearest-center assignment, whole-region
+   small-region merge, compaction, luminance-sorted palette → ≤64 colours.
+   Two rules do the heavy lifting:
+
+   * **Split by error, not by size.** Classic median cut splits the box with the
+     widest range, which spends the palette on whatever covers the most area —
+     on a portrait the flat dark background swallowed the first dozen entries
+     with near-identical near-blacks while skin starved. Splitting the box with
+     the largest total squared error (population × variance) puts colours where
+     variation actually is.
+   * **Merge by contrast, not just size.** A 24-cell floor removes gradient
+     dither, but a small region that differs strongly (>40 RGB distance) from
+     its neighbour is *structure* — an iris, a brow, a strand of hair — and is
+     kept. A blind size floor merges exactly the features that make a face
+     readable, which is why the earlier 339-region board still looked like a
+     slab despite scoring well on correlation.
+
+   Measured on a 293 px portrait:
+
+   | Board | Settings | Colours | Regions | High-pass detail | Correlation |
+   | --- | --- | --- | --- | --- | --- |
+   | 128² | 130 boxes, 5-cell floor, size-only merge | 94 | 356 | 114% | 0.909 |
+   | 128² | 140 boxes, 12-cell floor (scene retune) | 75 | 168 | 104% | 0.865 |
+   | 256² | 48 boxes, 24-cell floor, size-only merge | 45 | 171 | 130% | 0.945 |
+   | 256² | 48 boxes, 24-cell floor, contrast guard (shipped) | 48 | 1,213 | 121% | 0.990 |
+
+   So the import trades regions for recognition: ~1,200 taps against 356 before,
+   with luminance correlation rising from 0.909 to 0.990 and the face, eyes,
+   hair strands, hand and tie all legible. The 171-region row shows why the
+   count alone is a bad target — it has *fewer* taps than the old import and
+   still reads as a slab. The review screen prints the region count so the trade
+   is visible, and the ~1,200 small regions are what the fill tool sweeps
+   through quickly (each is one tap, and most sit inside large colour areas).
 4. **Derive the paper** — palette index 0 is the uncolored-cell color, so it
    must contrast with the page background the way every built-in scene's paper
    does. The paper is the photo's average palette color, desaturated 45% and
@@ -344,9 +373,9 @@ from start to finish, and the pick step of the import deserved some play.
    region of 26–55 cells and 93–264 regions per board (was 519–1078 regions,
    half of them under 8 cells). `contentVersion` bumps 8→9 so pre-retune
    saves exit cleanly.
-   **Photos keep their own settings** (130-box target, 5-cell floor): the
-   12-cell rule is right for the synthetic scenes and wrong for faces — see
-   §14 for why.
+   **Photos keep their own settings** (256² board, 48-box target, 12-cell
+   floor): the 128² / 12-cell rule is right for the synthetic scenes and wrong
+   for a face — see §14 for why and for the measurements.
 4. **Controllable zoom.** Wheel/trackpad zoom is now exponential and
    proportional to the scroll distance, capped per event, so one mouse notch
    is ~1.12× and a trackpad flick no longer races across the whole zoom

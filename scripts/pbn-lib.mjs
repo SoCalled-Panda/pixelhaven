@@ -443,10 +443,13 @@ export function quantizeCanvas(cv, { colorTarget = 170, minSize = 4, minColors =
   for (let i = 0; i < w * h; i++) {
     pixels.push([cv.data[i * 3], cv.data[i * 3 + 1], cv.data[i * 3 + 2]]);
   }
+  const maxK = Math.max(2, maxColors);
   let k = colorTarget;
   let grid = null;
   let palette = null;
-  // Try increasing k until at least minColors survive region cleanup.
+  // Try increasing k until at least minColors survive region cleanup. Growth
+  // is clamped to maxK so the palette ceiling is honoured (the browser port
+  // in src/lib/photoPbn.ts does the same).
   for (let attempt = 0; attempt < 4; attempt++) {
     const centers = medianCut(pixels, k);
     grid = new Int32Array(w * h);
@@ -477,8 +480,8 @@ export function quantizeCanvas(cv, { colorTarget = 170, minSize = 4, minColors =
       if (remap[c + 1] > 0) finalPalette[remap[c + 1] - 1] = centers[c];
     }
     palette = finalPalette;
-    if (used >= minColors || k > 400) break;
-    k = Math.round(k * 1.5);
+    if (used >= minColors || k >= maxK) break;
+    k = Math.min(maxK, Math.round(k * 1.5));
   }
   // Sort palette by luminance so the palette bar reads as a smooth ramp.
   const order = palette

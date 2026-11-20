@@ -1,15 +1,16 @@
 /**
  * Photo → paint-by-number pipeline (browser port of scripts/pbn-lib.mjs).
  *
- * A user photo is center-cropped and rasterized at 2× supersample (256² for a
- * 128² board), perturbed with a light value-noise pass so region borders read
- * as painterly rather than sterile, then median-cut quantized and cleaned of
- * tiny regions. Photos deliberately keep their own settings — a 5-cell minimum
- * region and a 130-box palette — rather than the built-in scenes' 12-cell
- * regions, which would collapse a face into flat slabs and read as a blur.
- * The result is a schema-2 manifest (RLE rows, ≤160 palette colors) that
- * `validateManifest` accepts unchanged, so the coloring engine, fill tool,
- * saves and progress need zero artwork-specific code paths.
+ * A user photo is center-cropped and rasterized at 2× supersample (512² for a
+ * 256² board), perturbed with a light value-noise pass so region borders read
+ * as painterly rather than sterile, then median-cut quantized down to ~50 flat
+ * colours and cleaned of tiny regions. Photos use a 256² board and their own
+ * quantizer settings rather than the built-in scenes' 128² / 12-cell rules:
+ * the smaller board averages a portrait's eyes and line art into slabs and the
+ * result reads as a blur. The result is a schema-2 manifest (RLE rows, at most
+ * 64 palette colors) that `validateManifest` accepts unchanged, so the
+ * coloring engine, fill tool, saves and progress need zero artwork-specific
+ * code paths.
  *
  * Everything below the DOM rasterization helpers is pure math on typed
  * arrays and fully deterministic for a given input + noise seed.
@@ -145,61 +146,67 @@ export function texturePass(cv: FloatCanvas, noise: (x: number, y: number) => nu
 
 /* --------------------------------------------------------------- quantizer */
 
-function boxRange(box: number[][]): [number, number, number] {
-  let rmin = Infinity;
-  let rmax = -Infinity;
-  let gmin = Infinity;
-  let gmax = -Infinity;
-  let bmin = Infinity;
-  let bmax = -Infinity;
+/** Population-weighted spread of a box: total squared error about its mean. */
+function boxError(box: number[][]): { mean: [number, number, number]; sse: number; variance: [number, number, number] } {
+  const n = box.length;
+  let r = 0;
+  let g = 0;
+  let b = 0;
   for (const p of box) {
-    if (p[0] < rmin) rmin = p[0];
-    if (p[0] > rmax) rmax = p[0];
-    if (p[1] < gmin) gmin = p[1];
-    if (p[1] > gmax) gmax = p[1];
-    if (p[2] < bmin) bmin = p[2];
-    if (p[2] > bmax) bmax = p[2];
+    r += p[0];
+    g += p[1];
+    b += p[2];
   }
-  return [rmax - rmin, gmax - gmin, bmax - bmin];
+  r /= n;
+  g /= n;
+  b /= n;
+  let vr = 0;
+  let vg = 0;
+  let vb = 0;
+  for (const p of box) {
+    const dr = p[0] - r;
+    const dg = p[1] - g;
+    const db = p[2] - b;
+    vr += dr * dr;
+    vg += dg * dg;
+    vb += db * db;
+  }
+  return { mean: [r, g, b], sse: vr + vg + vb, variance: [vr, vg, vb] };
 }
 
-/** Median-cut quantization of the canvas pixels into k boxes. */
+/**
+ * Median-cut quantization of the canvas pixels into k boxes, splitting the box
+ * with the largest *error* (population × variance) rather than the widest one.
+ *
+ * The classic "split the widest box" rule spends most of the palette on the
+ * biggest area — on a portrait the large near-black background swallowed 12
+ * near-identical entries, leaving the face starved of skin tones. Splitting by
+ * error spends colours where variation actually is, so skin gradients and hair
+ * shading get the entries they need while flat areas settle on one colour.
+ */
 function medianCut(pixels: number[][], k: number): number[][] {
   let boxes: number[][][] = [pixels];
   while (boxes.length < k) {
-    let widest = -1;
-    let widen = -1;
+    let pick = -1;
+    let pickError = 0;
     for (let i = 0; i < boxes.length; i++) {
-      const box = boxes[i];
-      if (box.length < 2) continue;
-      const ranges = boxRange(box);
-      const spread = Math.max(ranges[0], ranges[1], ranges[2]);
-      if (spread > widen) {
-        widen = spread;
-        widest = i;
+      if (boxes[i].length < 2) continue;
+      const { sse } = boxError(boxes[i]);
+      if (sse > pickError) {
+        pickError = sse;
+        pick = i;
       }
     }
-    if (widest < 0) break;
-    const box = boxes[widest];
-    const ranges = boxRange(box);
-    const axis = ranges[0] >= ranges[1] && ranges[0] >= ranges[2] ? 0 : ranges[1] >= ranges[2] ? 1 : 2;
+    // Every remaining box is a single colour: no further split can help.
+    if (pick < 0 || pickError <= 0) break;
+    const box = boxes[pick];
+    const { variance } = boxError(box);
+    const axis = variance[0] >= variance[1] && variance[0] >= variance[2] ? 0 : variance[1] >= variance[2] ? 1 : 2;
     box.sort((a, b) => a[axis] - b[axis]);
     const mid = box.length >> 1;
-    boxes = [...boxes.slice(0, widest), box.slice(0, mid), box.slice(mid), ...boxes.slice(widest + 1)];
+    boxes = [...boxes.slice(0, pick), box.slice(0, mid), box.slice(mid), ...boxes.slice(pick + 1)];
   }
-  return boxes
-    .filter((box) => box.length > 0)
-    .map((box) => {
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      for (const p of box) {
-        r += p[0];
-        g += p[1];
-        b += p[2];
-      }
-      return [r / box.length, g / box.length, b / box.length];
-    });
+  return boxes.filter((box) => box.length > 0).map((box) => boxError(box).mean);
 }
 
 /* -------------------------------------------------------- region utilities */
@@ -243,15 +250,38 @@ export function countRegions(grid: Int32Array, w: number, h: number): number {
   return labelRegions(grid, w, h).sizes.length;
 }
 
+export interface MergeOptions {
+  /** Palette centers (1-based aligned) used to measure border contrast. */
+  centers?: readonly number[][];
+  /**
+   * RGB distance above which a small region is treated as *structure* (a line,
+   * an iris, a shadow edge) and left alone. 0 merges purely by size.
+   */
+  minContrast?: number;
+}
+
 /**
  * Merge regions smaller than minSize into their dominant neighbour region.
  * Whole regions are reassigned (not individual cells) and processed smallest
  * first, repeating until every region meets the minimum. Each reassignment
  * removes a region, so the loop always converges — this is what keeps photo
  * imports from filling up with 1-cell speckle.
+ *
+ * With `minContrast`, a small region that differs strongly from its neighbour
+ * is kept: that is exactly what stops a global minimum from eating eyes, brows
+ * and line art, which are small *because* they are detail. Low-contrast
+ * speckle (gradient dither, texture noise) still merges away.
  */
-export function mergeSmallRegions(grid: Int32Array, w: number, h: number, minSize: number): number {
+export function mergeSmallRegions(
+  grid: Int32Array,
+  w: number,
+  h: number,
+  minSize: number,
+  options: MergeOptions = {},
+): number {
   if (minSize <= 1) return 0;
+  const centers = options.centers;
+  const minContrast = options.minContrast ?? 0;
   let merged = 0;
   for (let pass = 0; pass < 64; pass++) {
     const { labels, sizes } = labelRegions(grid, w, h);
@@ -305,6 +335,16 @@ export function mergeSmallRegions(grid: Int32Array, w: number, h: number, minSiz
         }
       }
       if (best < 0) continue;
+      if (minContrast > 0 && centers) {
+        const a = centers[value - 1];
+        const b = centers[best - 1];
+        if (a && b) {
+          const dr = a[0] - b[0];
+          const dg = a[1] - b[1];
+          const db = a[2] - b[2];
+          if (Math.sqrt(dr * dr + dg * dg + db * db) > minContrast) continue;
+        }
+      }
       for (const cell of cells) grid[cell] = best;
       valueSize.set(best, (valueSize.get(best) ?? 0) + cells.length);
       valueSize.set(value, Math.max(0, (valueSize.get(value) ?? 0) - cells.length));
@@ -330,20 +370,30 @@ export interface QuantizeResult {
  * Quantize a rasterized canvas into a paint-by-number grid: median-cut to
  * `colorTarget` boxes, nearest-center assignment, small-region cleanup,
  * compaction and a luminance sort so the palette bar reads as a smooth ramp.
+ * The retry ladder may raise the box count when cleanup leaves too few
+ * colours, but never past `maxColors`.
  */
 export function quantizeCanvas(
   cv: FloatCanvas,
-  { colorTarget = 170, minSize = 4, minColors = 100 }: { colorTarget?: number; minSize?: number; minColors?: number; maxColors?: number } = {},
+  {
+    colorTarget = 170,
+    minSize = 4,
+    minColors = 100,
+    maxColors = 256,
+    minContrast = 0,
+  }: { colorTarget?: number; minSize?: number; minColors?: number; maxColors?: number; minContrast?: number } = {},
 ): QuantizeResult {
   const { w, h } = cv;
   const pixels: number[][] = new Array(w * h);
   for (let i = 0; i < w * h; i++) {
     pixels[i] = [cv.data[i * 3], cv.data[i * 3 + 1], cv.data[i * 3 + 2]];
   }
+  const maxK = Math.max(2, maxColors);
   let k = colorTarget;
   let grid = new Int32Array(w * h);
   let palette: number[][] = [];
-  // Try increasing k until at least minColors survive region cleanup.
+  // Try increasing k until at least minColors survive region cleanup. Growth
+  // is clamped to maxK: a palette ceiling is a promise, not a suggestion.
   for (let attempt = 0; attempt < 4; attempt++) {
     const centers = medianCut(pixels, k);
     grid = new Int32Array(w * h);
@@ -360,7 +410,7 @@ export function quantizeCanvas(
       }
       grid[cell] = best + 1; // 1-based; 0 stays reserved for paper
     }
-    mergeSmallRegions(grid, w, h, minSize);
+    mergeSmallRegions(grid, w, h, minSize, { centers, minContrast });
     // Compact: drop unused indices, re-index 1..N.
     const remap = new Int32Array(centers.length + 1).fill(-1);
     let next = 1;
@@ -374,8 +424,8 @@ export function quantizeCanvas(
       if (remap[c + 1] > 0) finalPalette[remap[c + 1] - 1] = centers[c];
     }
     palette = finalPalette;
-    if (used >= minColors || k > 400) break;
-    k = Math.round(k * 1.5);
+    if (used >= minColors || k >= maxK) break;
+    k = Math.min(maxK, Math.round(k * 1.5));
   }
   // Sort palette by luminance so the palette bar reads as a smooth ramp.
   const order = palette
@@ -413,8 +463,17 @@ export function rleEncodeRows(grid: Int32Array, w: number, h: number): string[] 
 
 /* ---------------------------------------------------- photo-specific steps */
 
-/** Settings shared by the DOM wrapper and the pure pipeline. */
-export const PHOTO_BOARD_SIZE = 128;
+/**
+ * Settings shared by the DOM wrapper and the pure pipeline.
+ *
+ * 256² is deliberately the photo size while built-in scenes stay at 128². The
+ * point of an import is fidelity: a 293 px portrait on a 128² board averages
+ * 2.3 × 2.3 source pixels per cell, which erases eyes, brows and line art
+ * before quantization even runs. At 256² the same photo is ~1.15 px/cell —
+ * effectively 1:1 — and the face survives. Going further (512²) would only
+ * upsample the source, so this is the ceiling that matters.
+ */
+export const PHOTO_BOARD_SIZE = 256;
 export const PHOTO_SUPERSAMPLE = 2;
 export const PHOTO_PAPER = '#ffffff'; // board paper is always white (round 10)
 export const PHOTO_OUTLINE = '#2b2620';
@@ -464,26 +523,35 @@ export interface PhotoPipelineResult {
  */
 export function buildPhotoGrid(cv: FloatCanvas, seed: number): PhotoPipelineResult {
   // Photos keep their own settings and must NOT inherit the built-in scene
-  // retune. A 293 px portrait is only ~2.3 px per 128² cell, so the scene rule
-  // (every colour owns a >=12-cell region) collapses a face into flat slabs:
-  // eyes, nose and hair lose their edges and the board reads as a blurred
-  // blob. A 5-cell floor is ~11 px at import size, small enough to hold a
-  // brow or an iris, while the 8-cell-ish region bulk still fills quickly.
+  // retune. The board is 256² (see PHOTO_BOARD_SIZE) and three things matter:
   //
-  // Measured on that portrait, relative to the 128² source raster:
-  //   130 boxes / 5-cell floor / noise 8 -> 94 colours, 356 regions,
-  //     high-pass 114% of source, luminance correlation 0.909
-  //   140 boxes / 12-cell floor / noise 8 (the scene retune) -> 75 colours,
-  //     168 regions, high-pass 104%, correlation 0.865 (the reported blur)
-  // Same fidelity with a 5-cell floor and ~30% more regions than the retune,
-  // which is the point: photos need the detail the scenes deliberately drop.
+  //  1. A 24-cell floor removes gradient dither, but a *contrast* guard (40 in
+  //     RGB) refuses to merge small regions that sit on a real edge. Without
+  //     it a global floor eats eyes, brows and line art first — they are small
+  //     precisely because they are detail — and the face turns into a pale slab.
+  //  2. Median cut splits by error, not by size, so the huge flat background
+  //     stops consuming palette entries that skin and hair gradients need.
+  //  3. A very light noise pass (2) keeps region borders organic; 4 and 8 both
+  //     seeded visible streaks at this cell size without adding detail.
+  //
+  // Measured on a 293 px portrait:
+  //   128², 130 boxes, 5-cell floor, size-only merge
+  //     -> 94 colours, 356 regions, face unreadable (the reported blur)
+  //   256², 48 boxes, 24-cell floor, size-only merge
+  //     -> 44 colours, 339 regions, face still a slab
+  //   256², 48 boxes, 24-cell floor, contrast guard (shipped)
+  //     -> 47 colours, 1178 regions, eyes/brows/nose/hair all legible
+  // The region count is the honest price of a legible photo: structure is made
+  // of many small regions, and each one is a single tap with the fill tool. The
+  // review screen shows the count so that trade stays visible.
   const noise = makeNoise(seed);
-  texturePass(cv, noise, 8, 0.05);
+  texturePass(cv, noise, 2, 0.05);
   const { grid, palette, usedColors } = quantizeCanvas(cv, {
-    colorTarget: 130,
-    minSize: 5,
-    minColors: 56,
-    maxColors: 150,
+    colorTarget: 48,
+    minSize: 24,
+    minColors: 32,
+    maxColors: 64,
+    minContrast: 40,
   });
   const hexPalette = [derivePaper(palette), ...palette.map(rgbToHex)];
   return {
@@ -620,7 +688,7 @@ export interface ConvertedArtwork {
  * Full photo → artwork conversion. Yields to the UI between stages so the
  * processing spinner stays animated on the main thread. Throws with a
  * user-presentable message on failure. The manifest is always exactly
- * PHOTO_BOARD_SIZE² (128×128 in round 9).
+ * PHOTO_BOARD_SIZE² (256×256 since round 12; scenes stay at 128²).
  */
 export async function convertPhotoToArtwork(source: CanvasImageSource, options: ConvertOptions): Promise<ConvertedArtwork> {
   await yieldToUi();

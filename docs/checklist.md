@@ -437,3 +437,40 @@ while keeping the original per-cell coloring."*
 - [x] **Tests & validation.** *(139/139 green including new merge-convergence
   and aim tests; typecheck, eslint, build and validate:assets all pass. HD
   validator band is now 24..128 colours at 128×128.)*
+
+## V. Review feedback round 12 — photos get a 256² board
+
+- [x] **Blur was resolution, not palette.** *(Reproduced the reported "total
+  blur" by driving the real import wizard with a crop of the user's portrait.
+  The 128² board averages 2.3 × 2.3 source pixels per cell, so eyes, brows and
+  line art were destroyed before quantization ran — a 12-cell floor then
+  guaranteed the result read as flat slabs. Restoring the pre-retune photo
+  settings only reached parity (correlation 0.909); it could not add detail the
+  downsampler had already thrown away.)*
+- [x] **Photos ship at 256² (scenes stay 128²).** *(At 256² the same portrait is
+  ~1.15 px/cell, effectively 1:1, and 512² would only upsample the source — so
+  256² is the ceiling that matters. Verified in the browser: 256×256, seekable
+  with the existing pan/zoom.)*
+- [x] **The palette was spent on the background, and the floor ate the face.**
+  *(Two quantizer defects surfaced once the board was big enough to see them.
+  Median cut split the box with the widest range, so a large flat dark
+  background consumed the first dozen palette entries with near-identical
+  near-blacks while skin starved; it now splits by total squared error
+  (population × variance). And `mergeSmallRegions` merged purely by size, so a
+  global floor removed exactly the small regions that *are* the detail —
+  eyes, brows, hair strands. It now takes `{ centers, minContrast }` and keeps
+  any small region more than 40 RGB units from its neighbour. Final settings:
+  48 boxes (64 ceiling), 24-cell floor, contrast guard, noise 2. Measured on
+  the 293 px portrait: 48 colours, 1,213 regions, 121% of source high-pass
+  detail, luminance correlation 0.990 — versus 94 / 356 / 114% / 0.909 on the
+  old 128² import. The region count rose ~3.4× and that is the honest cost of
+  a legible face; the review screen prints it.)*
+- [x] **`maxColors` was a no-op.** *(Both quantizers accepted it and never read
+  it, so the retry ladder could raise the palette past its own stated ceiling.
+  Growth is now clamped to `maxColors` in `src/lib/photoPbn.ts` and
+  `scripts/pbn-lib.mjs`; a unit test pins it. Generated artwork is unchanged
+  (the shipped set already breaks out of the ladder on the first pass).)*
+- [x] **Tests & validation.** *(142/142 green, including new contrast-merge and
+  `maxColors` cases; typecheck, eslint, build and validate:assets pass. E2E
+  through the real wizard renders the 256² board in the review side-by-side
+  with crisp pixelated display.)*
