@@ -213,7 +213,11 @@ export function PhotoImport({
                 →
               </span>
               <figure>
-                <img src={phase.converted.previewDataUrl} alt="The paint-by-number version" />
+                <img
+                  src={phase.converted.previewDataUrl}
+                  alt="The paint-by-number version"
+                  className="import-review__result"
+                />
                 <figcaption>Your coloring page</figcaption>
               </figure>
             </div>

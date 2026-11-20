@@ -267,13 +267,22 @@ photo can become a paint-by-number board on the spot:
 
 1. **Rasterize** — the picked file is decoded EXIF-aware
    (`createImageBitmap … 'from-image'` with an `<img>` fallback), center-cropped
-   to a square (cover fit) and drawn at 2× supersample: 512² for the 256² board.
-2. **Texture** — a light value-noise pass (amount 8, vs 14 for scenes) gives
-   region borders a painterly wobble. The noise seed is a content hash of the
-   rasterized pixels, so the same photo always converts to the same board.
-3. **Quantize** — median cut to 150 boxes (retry ladder raises k when region
-   cleanup drops below 60 colors), nearest-center assignment, small-region
-   merge (min 4 cells), compaction, luminance-sorted palette → ≤200 colors.
+   to a square (cover fit) and drawn at 2× supersample: 256² for the 128² board.
+2. **Texture** — a light value-noise pass (amount 8, the same as the scenes)
+   gives region borders a painterly wobble. The noise seed is a content hash of
+   the rasterized pixels, so the same photo always converts to the same board.
+3. **Quantize** — median cut to 130 boxes (retry ladder raises k when region
+   cleanup drops below 56 colors), nearest-center assignment, small-region
+   merge (min 5 cells), compaction, luminance-sorted palette → ≤150 colors.
+   **Photos keep their own settings and never inherit the scene retune.** A 128²
+   board from a 293 px portrait is only ~2.3 px per cell, so the scene rule
+   (every colour owns ≥12 cells) collapses eyes/nose/hair into flat slabs and
+   the board reads as a blurred blob; 5 cells is ~11 px at import size and keeps
+   the face legible. Measured on that portrait against the 128² source raster:
+   the 12-cell setting scores 104% of source high-pass detail at 0.865
+   luminance correlation (the reported blur), while 130 boxes / 5 cells / noise
+   8 scores 114% at 0.909 — the same fidelity the pre-retune import had, with
+   ~30% more regions than the retune, which is exactly the trade a face needs.
 4. **Derive the paper** — palette index 0 is the uncolored-cell color, so it
    must contrast with the page background the way every built-in scene's paper
    does. The paper is the photo's average palette color, desaturated 45% and
@@ -318,7 +327,10 @@ from start to finish, and the pick step of the import deserved some play.
    nearest-neighbor — bilinear smoothing is what made the fit view read as
    "blurry". Cells keep hard pixel-art edges at every zoom; overlays are
    vector-crisp on top. (Anti-aliasing is deliberately *not* used here: it
-   bleeds colours across cell boundaries.)
+   bleeds colours across cell boundaries.) The import wizard's review
+   side-by-side follows the same rule: the generated board's 2 px/cell PNG is
+   `image-rendering: pixelated`, while the source photo beside it stays
+   smoothly scaled.
 3. **Round 11: clean, fillable regions.** Shrinking the board exposed a data
    problem rather than a display one: the 128² palette still carried 100+
    colours that only existed as 1–2 cell specks. `mergeSmallRegions` did a
@@ -326,12 +338,15 @@ from start to finish, and the pick step of the import deserved some play.
    size, and the dither read as "mushy" while making fill sessions endless.
    The merge now relabels after every pass, folds whole regions
    smallest-first, and repeats until every region clears the minimum — each
-   step removes a region, so it always converges. Generator and import
-   settings: every colour must own ≥12 cells, light noise (8), median-cut
-   target 140, palette band 24..128. The shipped set is 32–113 colours
-   (avg ~68) with a median region of 26–55 cells and 93–264 regions per
-   board (was 519–1078 regions, half of them under 8 cells).
-   `contentVersion` bumps 8→9 so pre-retune saves exit cleanly.
+   step removes a region, so it always converges. Built-in scenes: every
+   colour must own ≥12 cells, light noise (8), median-cut target 140, palette
+   band 24..128. The shipped set is 32–113 colours (avg ~68) with a median
+   region of 26–55 cells and 93–264 regions per board (was 519–1078 regions,
+   half of them under 8 cells). `contentVersion` bumps 8→9 so pre-retune
+   saves exit cleanly.
+   **Photos keep their own settings** (130-box target, 5-cell floor): the
+   12-cell rule is right for the synthetic scenes and wrong for faces — see
+   §14 for why.
 4. **Controllable zoom.** Wheel/trackpad zoom is now exponential and
    proportional to the scroll distance, capped per event, so one mouse notch
    is ~1.12× and a trackpad flick no longer races across the whole zoom

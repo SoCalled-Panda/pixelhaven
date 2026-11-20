@@ -1367,6 +1367,13 @@ button {
   background: var(--color-canvas-paper);
 }
 
+/* The result is a 2 px/cell pixel-art PNG; bilinear upscaling makes it look
+   blurred in the side-by-side. Keep the source photo smooth, but the generated
+   board must stay crisp — same rule as the studio canvas. */
+.import-review__compare img.import-review__result {
+  image-rendering: pixelated;
+}
+
 .import-review__compare figcaption {
   font-size: var(--text-xs);
   font-weight: 600;

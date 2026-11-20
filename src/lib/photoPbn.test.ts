@@ -318,10 +318,10 @@ describe('constants', () => {
     expect(rgbToHex([255, 0, 16])).toBe('#ff0010');
   });
 
-  it('buildPhotoGrid boards land in the retuned 24..128 color band', () => {
+  it('buildPhotoGrid keeps the photo-specific palette, not the scene band', () => {
     const result = buildPhotoGrid(makeTestCanvas(128, 128), 777);
     expect(result.size).toBe(128);
     expect(result.usedColors).toBeGreaterThanOrEqual(2);
-    expect(result.usedColors).toBeLessThanOrEqual(128);
+    expect(result.usedColors).toBeLessThanOrEqual(150);
   });
 });
